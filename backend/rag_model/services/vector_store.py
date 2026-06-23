@@ -1,7 +1,7 @@
 import json
 import logging
 import os
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Tuple
 
 import faiss
 import numpy as np
@@ -21,8 +21,9 @@ class VectorStoreSingleton:
             cls._instance.index = None
             cls._instance.metadata = []
             cls._instance.dimension = getattr(settings, 'RAG_EMBEDDING_DIMENSION', 384)
-            cls._instance.index_path = os.path.join(settings.BASE_DIR, 'data', 'faiss_index_minilm.bin')
-            cls._instance.metadata_path = os.path.join(settings.BASE_DIR, 'data', 'faiss_metadata_minilm.json')
+            # Use the consolidated data directory under rag_model/data/
+            cls._instance.index_path = os.path.join(settings.BASE_DIR, 'rag_model', 'data', 'faiss.index')
+            cls._instance.metadata_path = os.path.join(settings.BASE_DIR, 'rag_model', 'data', 'meta.json')
             cls._instance._load_index()
         return cls._instance
 
@@ -44,16 +45,21 @@ class VectorStoreSingleton:
             self.index = faiss.IndexFlatL2(self.dimension)
             self.metadata = []
 
+    @classmethod
+    def reset(cls):
+        """Reset the singleton so the next instantiation reloads from disk."""
+        cls._instance = None
+
     def add_chunks(self, chunks: List[Dict[str, Any]]):
         """
-        Add chunks to the index. 
+        Add chunks to the index.
         Each chunk must have 'text' and other metadata like 'drug', 'section'.
         """
         if not chunks:
             return
 
         texts = [chunk['text'] for chunk in chunks]
-        
+
         try:
             embeddings = embed_texts(texts)
         except RAGModelError as exc:
@@ -81,16 +87,17 @@ class VectorStoreSingleton:
             json.dump(self.metadata, f, ensure_ascii=False, indent=2)
         logger.info(f"Saved FAISS index with {self.index.ntotal} vectors to {self.index_path}")
 
-    def search(self, query: str, top_k: int = 4) -> List[Dict[str, Any]]:
+    def search(self, query: str, top_k: int = 4) -> List[Tuple[Dict[str, Any], float]]:
         """
         Search for the top_k most similar chunks.
+        Returns list of (metadata_dict, distance) tuples.
         """
         if self.index is None or self.index.ntotal == 0:
             self._load_index()
 
         if self.index.ntotal == 0:
             return []
-            
+
         try:
             query_embedding = embed_query(query)
         except RAGModelError as exc:
@@ -98,16 +105,15 @@ class VectorStoreSingleton:
             return []
 
         query_np = np.array([query_embedding], dtype='float32')
-        
+
         # FAISS search
         distances, indices = self.index.search(query_np, top_k)
-        
+
         results = []
         for dist, idx in zip(distances[0], indices[0]):
             if idx != -1 and idx < len(self.metadata):
-                # distance thresholding can be added if needed
-                results.append(self.metadata[idx])
-                
+                results.append((self.metadata[idx], float(dist)))
+
         return results
 
 # Expose a singleton instance

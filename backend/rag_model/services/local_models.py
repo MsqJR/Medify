@@ -8,6 +8,12 @@ from sentence_transformers import SentenceTransformer
 
 logger = logging.getLogger(__name__)
 
+
+class RAGModelError(Exception):
+    """Raised when a RAG model operation (embedding or generation) fails."""
+    pass
+
+
 # Constants
 EMBEDDING_MODEL_ID = "sentence-transformers/all-MiniLM-L6-v2"
 
@@ -58,7 +64,7 @@ def _get_gemini_client() -> genai.Client:
     return client
 
 
-def generate_text(prompt: str, max_new_tokens: int = 512, temperature: float = 0.2, max_retries: int = 3) -> str:
+def generate_text(prompt: str, max_new_tokens: int = 2048, temperature: float = 0.2, max_retries: int = 3) -> str:
     """
     Generates text using the Gemini API (google.genai SDK) with retry/backoff.
     """

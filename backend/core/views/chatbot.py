@@ -11,7 +11,7 @@ from rest_framework.views import APIView
 from core.models import ChatConversation, ChatMessage, TemplateAISettings, WebsiteSetup
 from core.serializers import ChatConversationSerializer, ChatbotRequestSerializer
 from core.services.chatbot import ChatbotServiceError, MedicalChatbotService
-from rag_model.rag_service import RAGService
+from rag_model.services.rag_service import ask_rag
 
 
 class ChatbotAPIView(APIView):
@@ -100,8 +100,7 @@ class ChatbotAPIView(APIView):
         chatbot_response = None
         try:
             if getattr(website_setup.user, 'business_type', '') == 'pharmacy':
-                rag = RAGService()
-                rag_result = rag.ask(data['message'])
+                rag_result = ask_rag(data['message'])
                 # construct a lightweight ChatbotResponse-compatible object
                 class _R:
                     pass
@@ -114,9 +113,9 @@ class ChatbotAPIView(APIView):
                 _r.guidance = []
                 _r.urgency = 'routine'
                 _r.seek_emergency_care = False
-                _r.confidence_note = f"retrieval_confidence={rag_result.get('confidence', 0):.2f}"
+                _r.confidence_note = f"retrieval_confidence={rag_result.get('confidence_score', 0):.2f}"
                 _r.disclaimer = ai_settings.disclaimer
-                _r.raw_model_output = rag_result.get('raw_model_output', '')
+                _r.raw_model_output = ''
                 chatbot_response = _r
             else:
                 chatbot_response = MedicalChatbotService.generate_response(

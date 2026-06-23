@@ -70,8 +70,9 @@ def ask_rag(query: str) -> Dict[str, Any]:
     sources = []
     
     for idx, (score, meta, dist) in enumerate(top_chunks):
-        drug = meta.get("drug", "Unknown")
-        section = meta.get("section", "Unknown")
+        # Support both formats: new (drug/section) and legacy (source/meta.brand_name)
+        drug = meta.get("drug") or (meta.get("meta", {}) or {}).get("brand_name") or "Unknown"
+        section = meta.get("section") or meta.get("source") or "Unknown"
         text = meta.get("text", "")
         
         context_blocks.append(f"--- Context {idx + 1} ---\nDrug: {drug}\nSection: {section}\nInfo: {text}\n")
@@ -99,7 +100,7 @@ USER PROMPT: {query}"""
 
     # 5. Generate answer using Gemini API
     try:
-        answer = generate_text(prompt=prompt, max_new_tokens=512, temperature=0.1)
+        answer = generate_text(prompt=prompt, max_new_tokens=2048, temperature=0.1)
         
         # Ensure fallback message is present if the model forgot it
         if "not medical advice" not in answer.lower():
