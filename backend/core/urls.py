@@ -36,6 +36,9 @@ urlpatterns = [
         'put': 'update',
         'delete': 'destroy'
     }), name='businessinfo-detail'),
+    path('business-info/public_info/', business_info.BusinessInfoViewSet.as_view({
+        'get': 'public_info'
+    }), name='businessinfo-public-info'),
     path('business-info/publish/', business_info.BusinessInfoViewSet.as_view({
         'post': 'publish'
     }), name='businessinfo-publish'),

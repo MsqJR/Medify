@@ -391,32 +391,7 @@ export default function BusinessInfoPage() {
     setTimeout(() => {
       void (async () => {
         if (userType === 'pharmacy') {
-          const profileRes = await pharmacyApi.getProfile()
-          const backendTemplateId = profileRes.data?.template_id || null
-
-          const fallbackTemplateRaw = getScopedItem('selectedTemplate')
-          const fallbackTemplateId = fallbackTemplateRaw ? Number.parseInt(fallbackTemplateRaw, 10) : NaN
-          const resolvedTemplateId = backendTemplateId || (Number.isFinite(fallbackTemplateId) ? fallbackTemplateId : null)
-
-          if (resolvedTemplateId) {
-            const userRaw = localStorage.getItem('user')
-            let ownerParam = ''
-            if (userRaw) {
-              try {
-                const user = JSON.parse(userRaw)
-                if (user?.id) {
-                  ownerParam = `?owner=${encodeURIComponent(String(user.id))}`
-                }
-              } catch {
-                // Ignore malformed user payloads.
-              }
-            }
-
-            router.push(`/templates/pharmacy/${resolvedTemplateId}${ownerParam}`)
-            return
-          }
-
-          router.push('/dashboard/pharmacy/templates')
+          router.push('/dashboard/pharmacy')
           return
         }
 
@@ -432,19 +407,26 @@ export default function BusinessInfoPage() {
 
   // After publish succeeds, resolve the subdomain to show as a copyable URL
   useEffect(() => {
-    if (!isPublished || userType !== 'hospital') return
+    if (!isPublished) return
     const fetchSubdomain = async () => {
       try {
-        const token = localStorage.getItem('access_token')
-        if (!token) return
-        const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api'
-        const res = await fetch(`${API_URL}/hospital/admin/profile/profile/`, {
-          headers: { Authorization: `Bearer ${token}` },
-        })
-        if (res.ok) {
-          const data = await res.json()
-          const subdomain = data.subdomain || data.website_setup?.subdomain
-          if (subdomain) setPublishedSubdomain(subdomain)
+        if (userType === 'pharmacy') {
+          const profileRes = await pharmacyApi.getProfile()
+          if (profileRes.data?.subdomain) {
+            setPublishedSubdomain(profileRes.data.subdomain)
+          }
+        } else if (userType === 'hospital') {
+          const token = localStorage.getItem('access_token')
+          if (!token) return
+          const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api'
+          const res = await fetch(`${API_URL}/hospital/admin/profile/profile/`, {
+            headers: { Authorization: `Bearer ${token}` },
+          })
+          if (res.ok) {
+            const data = await res.json()
+            const subdomain = data.subdomain || data.website_setup?.subdomain
+            if (subdomain) setPublishedSubdomain(subdomain)
+          }
         }
       } catch {
         // ignore

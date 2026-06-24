@@ -12,6 +12,7 @@ class PharmacySerializer(serializers.ModelSerializer):
 
     logo_url = serializers.SerializerMethodField()
     product_count = serializers.SerializerMethodField()
+    subdomain = serializers.SerializerMethodField()
 
     class Meta:
         model = Pharmacy
@@ -28,6 +29,7 @@ class PharmacySerializer(serializers.ModelSerializer):
             'google_sheet_sync_enabled',
             'google_sheet_last_synced_at',
             'product_count',
+            'subdomain',
             'created_at',
             'updated_at',
         ]
@@ -51,6 +53,11 @@ class PharmacySerializer(serializers.ModelSerializer):
 
     def get_product_count(self, obj):
         return obj.products.count()
+
+    def get_subdomain(self, obj):
+        if hasattr(obj, 'website_setup') and obj.website_setup:
+            return obj.website_setup.subdomain
+        return None
 
 
 class PharmacyCreateUpdateSerializer(serializers.ModelSerializer):

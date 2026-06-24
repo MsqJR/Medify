@@ -113,17 +113,18 @@ export default function PharmacyDashboardPage() {
   const pharmacyName = businessInfo?.name || profile?.name || 'Your Pharmacy'
 
   const publishedWebsiteUrl = useMemo(() => {
+    if (!profile?.subdomain) return null
     if (!profile?.is_published || !profile?.template_id) return null
-    const query = ownerId ? `?owner=${ownerId}` : ''
-    return `/templates/pharmacy/${profile.template_id}${query}`
-  }, [profile?.is_published, profile?.template_id, ownerId])
+    if (typeof window === 'undefined') return null
+    return `${window.location.protocol}//${profile.subdomain}.${window.location.host}`
+  }, [profile?.subdomain, profile?.is_published, profile?.template_id])
 
   const isReadyToPublish = useMemo(() => {
     const hasTemplate = Boolean(profile?.template_id)
     const hasProducts = productStats.total > 0
-    const hasInfo = Boolean((businessInfo?.name || '').trim() && (businessInfo?.address || '').trim())
+    const hasInfo = Boolean((businessInfo?.name || '').trim())
     return hasTemplate && hasProducts && hasInfo && !profile?.is_published
-  }, [businessInfo?.address, businessInfo?.name, productStats.total, profile?.is_published, profile?.template_id])
+  }, [businessInfo?.name, productStats.total, profile?.is_published, profile?.template_id])
 
   const handlePublish = async () => {
     if (isPublishing) return
@@ -142,9 +143,9 @@ export default function PharmacyDashboardPage() {
   const progressSteps = useMemo(() => [
     { label: 'Template selected', completed: Boolean(profile?.template_id) },
     { label: 'Products uploaded', completed: productStats.total > 0 },
-    { label: 'Info completed', completed: Boolean((businessInfo?.name || '').trim() && (businessInfo?.address || '').trim()) },
+    { label: 'Info completed', completed: Boolean((businessInfo?.name || '').trim()) },
     { label: 'Published', completed: Boolean(profile?.is_published) },
-  ], [profile?.template_id, profile?.is_published, productStats.total, businessInfo?.name, businessInfo?.address])
+  ], [profile?.template_id, profile?.is_published, productStats.total, businessInfo?.name])
 
   const completedStepsCount = progressSteps.filter((s) => s.completed).length
   const activeStep = progressSteps.findIndex((s) => !s.completed)
@@ -227,7 +228,7 @@ export default function PharmacyDashboardPage() {
         <div className="rounded-2xl border border-neutral-border bg-white p-5 shadow-sm flex items-center gap-4">
           <div className="relative shrink-0">
             <CircleProgress percent={completionPercent} />
-            <span className="absolute inset-0 flex items-center justify-center text-sm font-bold text-primary rotate-[90deg]">
+            <span className="absolute inset-0 flex items-center justify-center text-sm font-bold text-primary">
               {isLoading ? '…' : `${completionPercent}%`}
             </span>
           </div>

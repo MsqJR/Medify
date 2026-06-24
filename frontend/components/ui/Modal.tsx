@@ -1,6 +1,7 @@
 'use client'
 
-import React, { useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { IoClose } from 'react-icons/io5'
 
 interface ModalProps {
@@ -18,6 +19,12 @@ export const Modal: React.FC<ModalProps> = ({
   children,
   size = 'md',
 }) => {
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden'
@@ -29,7 +36,7 @@ export const Modal: React.FC<ModalProps> = ({
     }
   }, [isOpen])
 
-  if (!isOpen) return null
+  if (!isOpen || !mounted) return null
 
   const sizeClasses = {
     sm: 'max-w-md',
@@ -38,11 +45,11 @@ export const Modal: React.FC<ModalProps> = ({
     xl: 'max-w-4xl',
   }
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
-      <div className={`bg-white rounded-lg shadow-xl w-full ${sizeClasses[size]} max-h-[90vh] overflow-y-auto`}>
+  const modalContent = (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black bg-opacity-50 p-4">
+      <div className={`bg-white rounded-lg shadow-xl w-full ${sizeClasses[size]} max-h-[90vh] flex flex-col`}>
         {title && (
-          <div className="flex items-center justify-between p-6 border-b border-neutral-border">
+          <div className="flex items-center justify-between p-6 border-b border-neutral-border shrink-0">
             <h2 className="text-xl font-semibold text-neutral-dark">{title}</h2>
             <button
               onClick={onClose}
@@ -52,9 +59,11 @@ export const Modal: React.FC<ModalProps> = ({
             </button>
           </div>
         )}
-        <div className="p-6">{children}</div>
+        <div className="p-6 overflow-y-auto">{children}</div>
       </div>
     </div>
   )
+
+  return createPortal(modalContent, document.body)
 }
 

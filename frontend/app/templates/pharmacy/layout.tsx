@@ -58,6 +58,13 @@ function PharmacyTemplatesLayoutContent({ children }: { children: React.ReactNod
       setSiteOwnerId(ownerId)
     }
 
+    if (!isDemo) {
+      // Security measure: if accessed directly without demo flag, redirect.
+      // Real subdomains should use the [subdomain] route.
+      window.location.href = '/dashboard'
+      return
+    }
+
     const currentUser = getStoredUser()
     if (!ownerId && currentUser?.id) {
       setSiteOwnerId(currentUser.id)

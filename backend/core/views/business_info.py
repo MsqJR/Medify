@@ -10,6 +10,11 @@ from core.services.subscription import can_publish_hospital
 class BusinessInfoViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
+    def get_permissions(self):
+        if self.action == 'public_info':
+            return [permissions.AllowAny()]
+        return super().get_permissions()
+
     def get_queryset(self):
         return BusinessInfo.objects.select_related('website_setup').filter(website_setup__user=self.request.user)
 
@@ -98,3 +103,42 @@ class BusinessInfoViewSet(viewsets.ModelViewSet):
         business_info.save()
         serializer = self.get_serializer(business_info, context={'request': request})
         return Response(serializer.data)
+
+    @action(detail=False, methods=['get'], permission_classes=[permissions.AllowAny], url_path='public_info')
+    def public_info(self, request):
+        """
+        Public endpoint to get basic info for a subdomain without authentication.
+        GET /api/business-info/public_info/?subdomain=...
+        """
+        subdomain = request.query_params.get('subdomain')
+        if not subdomain:
+            return Response({'error': 'subdomain is required'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            website_setup = WebsiteSetup.objects.select_related('user').get(subdomain__iexact=subdomain)
+        except WebsiteSetup.DoesNotExist:
+            return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+            
+        is_published = False
+        template_id = None
+        
+        if website_setup.user.business_type == 'pharmacy':
+            try:
+                profile = website_setup.pharmacy_profile
+                is_published = profile.is_published
+                template_id = profile.template_id
+            except Exception:
+                pass
+        else:
+            template_id = website_setup.template_id
+            try:
+                is_published = website_setup.businessinfo.is_published
+            except Exception:
+                pass
+
+        return Response({
+            'business_type': website_setup.user.business_type,
+            'owner_id': str(website_setup.user.id),
+            'template_id': template_id,
+            'is_published': is_published,
+        })

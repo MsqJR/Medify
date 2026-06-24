@@ -23,6 +23,7 @@ export type PharmacyProfile = {
   theme_settings: PharmacyThemeSettings
   template_id: number | null
   is_published: boolean
+  subdomain?: string | null
   google_sheet_url?: string
   google_sheet_sync_enabled?: boolean
   google_sheet_last_synced_at?: string | null
