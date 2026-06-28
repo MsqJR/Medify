@@ -117,11 +117,16 @@ class BusinessInfoViewSet(viewsets.ModelViewSet):
         GET /api/business-info/public_info/?subdomain=...
         """
         subdomain = request.query_params.get('subdomain')
-        if not subdomain:
-            return Response({'error': 'subdomain is required'}, status=status.HTTP_400_BAD_REQUEST)
+        owner_id = request.query_params.get('owner_id')
+        
+        if not subdomain and not owner_id:
+            return Response({'error': 'subdomain or owner_id is required'}, status=status.HTTP_400_BAD_REQUEST)
         
         try:
-            website_setup = WebsiteSetup.objects.select_related('user').get(subdomain__iexact=subdomain)
+            if owner_id:
+                website_setup = WebsiteSetup.objects.select_related('user').get(user__id=owner_id)
+            else:
+                website_setup = WebsiteSetup.objects.select_related('user').get(subdomain__iexact=subdomain)
         except WebsiteSetup.DoesNotExist:
             return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
             
@@ -142,9 +147,17 @@ class BusinessInfoViewSet(viewsets.ModelViewSet):
             except Exception:
                 pass
 
+        business_info_data = None
+        try:
+            from core.serializers.business_serializers import BusinessInfoSerializer
+            business_info_data = BusinessInfoSerializer(website_setup.businessinfo, context={'request': request}).data
+        except Exception:
+            pass
+
         return Response({
             'business_type': website_setup.user.business_type,
             'owner_id': str(website_setup.user.id),
             'template_id': template_id,
             'is_published': is_published,
+            'business_info': business_info_data,
         })

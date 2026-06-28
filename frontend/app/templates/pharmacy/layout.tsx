@@ -4,7 +4,7 @@ import React, { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 
 import { pharmacyApi, pharmacyProductsApi } from '@/lib/pharmacy'
-import { startPharmacyProductPolling } from '@/lib/pharmacySheetSync'
+import { startPharmacyProductPolling, fetchSyncedProducts, persistProductSnapshot } from '@/lib/pharmacySheetSync'
 import {
   getPharmacyThemeCssVariables,
   getStoredPharmacyThemeSettings,
@@ -58,12 +58,7 @@ function PharmacyTemplatesLayoutContent({ children }: { children: React.ReactNod
       setSiteOwnerId(ownerId)
     }
 
-    if (!isDemo) {
-      // Security measure: if accessed directly without demo flag, redirect.
-      // Real subdomains should use the [subdomain] route.
-      window.location.href = '/dashboard'
-      return
-    }
+
 
     const currentUser = getStoredUser()
     if (!ownerId && currentUser?.id) {
@@ -83,7 +78,7 @@ function PharmacyTemplatesLayoutContent({ children }: { children: React.ReactNod
         })
           .then((response) => (response.ok ? response.json() : null))
           .then((data) => {
-            if (!data?.logo_url) return
+            if (!data) return
 
             const merged: BusinessInfoSnapshot = {
               ...(cachedInfo || {}),
@@ -92,7 +87,7 @@ function PharmacyTemplatesLayoutContent({ children }: { children: React.ReactNod
               address: data.address || cachedInfo?.address || '',
               contactPhone: data.contact_phone || cachedInfo?.contactPhone || '',
               workingHours: data.working_hours || cachedInfo?.workingHours || {},
-              logo: data.logo_url,
+              logo: data.logo_url || cachedInfo?.logo,
             }
 
             const serialized = JSON.stringify(merged)
@@ -102,6 +97,31 @@ function PharmacyTemplatesLayoutContent({ children }: { children: React.ReactNod
           .catch(() => {
             // Ignore network errors; pages already support local fallbacks.
           })
+      } else {
+        const currentOwnerId = ownerId || getSiteOwnerId()
+        if (currentOwnerId) {
+          void fetch(`${apiBase}/business-info/public_info/?owner_id=${currentOwnerId}`)
+            .then((response) => (response.ok ? response.json() : null))
+            .then((data) => {
+              if (!data?.business_info) return
+              const bi = data.business_info
+
+              const merged: BusinessInfoSnapshot = {
+                ...(cachedInfo || {}),
+                name: bi.name || cachedInfo?.name || '',
+                about: bi.about || cachedInfo?.about || '',
+                address: bi.address || cachedInfo?.address || '',
+                contactPhone: bi.contact_phone || cachedInfo?.contactPhone || '',
+                workingHours: bi.working_hours || cachedInfo?.workingHours || {},
+                logo: bi.logo_url || bi.logo || cachedInfo?.logo,
+              }
+
+              const serialized = JSON.stringify(merged)
+              setSiteItem('businessInfo', serialized)
+              setPublicSiteItem('businessInfo', serialized)
+            })
+            .catch(() => {})
+        }
       }
 
       void pharmacyApi
@@ -132,6 +152,16 @@ function PharmacyTemplatesLayoutContent({ children }: { children: React.ReactNod
       const currentUser = getStoredUser()
       const resolvedOwnerId = ownerId || currentUser?.id || getSiteOwnerId()
       const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null
+
+      // Always fetch products at least once to ensure non-syncing users still get their products loaded.
+      const response = await fetchSyncedProducts({
+        authenticated: Boolean(token),
+        ownerId: token ? null : resolvedOwnerId,
+      })
+      
+      if (active && !response.error && response.data) {
+        persistProductSnapshot(Array.isArray(response.data) ? response.data : [])
+      }
 
       let syncEnabled = false
       if (token) {

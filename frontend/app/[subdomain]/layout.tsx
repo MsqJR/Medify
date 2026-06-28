@@ -2,6 +2,7 @@ import React from 'react';
 import Link from 'next/link';
 import HospitalChatWidget from '@/components/hospital/HospitalChatWidget';
 import { getHospitalBusinessInfo, getHospitalProfile } from '@/lib/hospitalApi';
+import { getSubdomainPublicInfo } from '@/lib/subdomainApi';
 import { normalizeLogoUrl } from '@/lib/storage';
 
 interface LayoutProps {
@@ -11,6 +12,13 @@ interface LayoutProps {
 
 export default async function HospitalLayout({ children, params }: LayoutProps) {
     const resolvedParams = await params;
+    
+    // Check business type to avoid rendering hospital UI for pharmacies
+    const subdomainInfo = await getSubdomainPublicInfo(resolvedParams.subdomain);
+    if (subdomainInfo?.business_type === 'pharmacy') {
+        return <>{children}</>;
+    }
+    
     const profile = await getHospitalProfile(resolvedParams.subdomain);
     const businessInfo = await getHospitalBusinessInfo(resolvedParams.subdomain);
     
