@@ -46,7 +46,8 @@ export default function middleware(req: NextRequest) {
         path.startsWith('/signup') ||
         path.startsWith('/templates') ||
         path.startsWith('/forgot-password') ||
-        path.startsWith('/reset-password')
+        path.startsWith('/reset-password') ||
+        path.startsWith('/review')
     ) {
         return NextResponse.next();
     }

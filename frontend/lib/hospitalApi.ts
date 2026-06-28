@@ -192,4 +192,14 @@ export const hospitalApi = {
     if (!parsed.data) return { error: parsed.error, status: parsed.status };
     return { data: normalizeList<HospitalPhoto>(parsed.data), status: parsed.status };
   },
+
+  async getReviews(subdomain: string): Promise<ApiResponse<any[]>> {
+    const response = await fetch(`${API_BASE_URL}/hospital/public/reviews/?subdomain=${encodeURIComponent(subdomain)}`, {
+      method: 'GET',
+      cache: 'no-store',
+    });
+    const parsed = await parseJson<unknown>(response);
+    if (!parsed.data) return { error: parsed.error, status: parsed.status };
+    return { data: normalizeList<any>(parsed.data), status: parsed.status };
+  },
 }

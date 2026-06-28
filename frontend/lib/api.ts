@@ -398,3 +398,42 @@ export const chatbotApi = {
   },
 }
 
+export const reviewApi = {
+  getReviewContext: async (token: string) => {
+    return apiRequest<{
+      appointment_id: string
+      doctor_name: string
+      hospital_name: string
+      start_datetime: string
+    }>(`/hospital/reviews/${token}/`)
+  },
+
+  submitReview: async (
+    token: string,
+    data: {
+      rating: number
+      doctor_professionalism: number
+      waiting_time: number
+      clinic_cleanliness: number
+      staff_behavior: number
+      overall_experience: number
+      comment: string
+    }
+  ) => {
+    return apiRequest<{
+      id: string
+      rating: number
+      comment: string
+    }>(`/hospital/reviews/${token}/`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+  },
+
+  getAdminReviews: async () => {
+    return apiRequest<{
+      results: Array<any>
+    }>('/hospital/admin/reviews/')
+  },
+}
+

@@ -979,7 +979,7 @@ export default function HospitalDoctorsPage() {
       experience: form.experience.trim(),
       email: form.email.trim(),
       gender: form.gender,
-      ...(form.age ? { age: Number(form.age) } : { age: null }),
+      ...(form.age ? { age: Number(form.age) } : {}),
       ...(includeActive ? { is_active: form.is_active } : {}),
     };
 

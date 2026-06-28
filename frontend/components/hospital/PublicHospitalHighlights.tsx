@@ -81,6 +81,8 @@ export default async function PublicHospitalHighlights({
   let yearsOfExcellence = '25';
   let patientsTreated = '50k+';
 
+  let displayTestimonials = testimonials;
+
   try {
     const [doctors, departments] = await Promise.all([
       getHospitalDoctors(subdomain),
@@ -101,6 +103,25 @@ export default async function PublicHospitalHighlights({
         ? profile.business_info.years_of_experience.toString()
         : profile.years_of_excellence?.toString() || '25';
       patientsTreated = profile.patients_treated || '50k+';
+    }
+
+    // Fetch dynamic reviews
+    const reviewsRes = await fetch(`${API_URL}/hospital/public/reviews/?subdomain=${encodeURIComponent(subdomain)}`, {
+      cache: 'no-store',
+    });
+    if (reviewsRes.ok) {
+      const reviews = await reviewsRes.json();
+      const mapped = (reviews || [])
+        .filter((r: any) => r.comment && r.comment.trim() !== '')
+        .map((r: any) => ({
+          quote: r.comment,
+          name: r.appointment_details?.patient_name || 'Anonymous Patient',
+          role: r.appointment_details?.doctor_name ? `Patient of Dr. ${r.appointment_details.doctor_name}` : 'Patient',
+          rating: r.rating || 5,
+        }));
+      if (mapped.length > 0) {
+        displayTestimonials = mapped;
+      }
     }
   } catch {
     doctorsCount = 0;
@@ -281,7 +302,7 @@ export default async function PublicHospitalHighlights({
           </div>
 
           {/* Testimonial Cards */}
-          <TestimonialsCarousel testimonials={testimonials} />
+          <TestimonialsCarousel testimonials={displayTestimonials} />
         </div>
       </section>
 

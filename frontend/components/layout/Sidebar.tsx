@@ -171,7 +171,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ userType, isOpen = true, onClo
         { label: 'Doctors', icon: <LuStethoscope />, href: '/dashboard/hospital/doctors' },
         { label: 'Appointments', icon: <LuCalendarCheck />, href: '/dashboard/hospital/appointments' },
         { label: 'Patients', icon: <LuInfo />, href: '/dashboard/hospital/patients' },
-        { label: 'Notifications', icon: <LuBell />, href: '/dashboard/hospital/notifications' },
+        { label: 'Reviews', icon: <LuMessageSquare />, href: '/dashboard/hospital/reviews' },
         { label: 'AI Assistant', icon: <LuSparkles />, href: '/dashboard/hospital/ai-assistant' },
       ]
       : []),

@@ -330,7 +330,7 @@ export default function HospitalChatWidget({
             href={formatWhatsAppLink(whatsAppNumber)}
             target="_blank"
             rel="noopener noreferrer"
-            className="fixed bottom-[104px] right-6 w-16 h-16 bg-[#25D366] rounded-full shadow-2xl shadow-emerald-500/20 flex items-center justify-center text-white hover:scale-110 hover:bg-[#20ba5a] transition-all duration-300 z-50 group"
+            className="fixed bottom-28 right-6 w-16 h-16 bg-[#25D366] rounded-full shadow-2xl shadow-emerald-500/20 flex items-center justify-center text-white hover:scale-110 hover:bg-[#20ba5a] transition-all duration-300 z-50 group"
             aria-label="Chat on WhatsApp"
           >
             <svg

@@ -76,3 +76,8 @@ Database: SQLite by default. Switch to PostgreSQL by setting `DB_ENGINE=postgres
 - `backend/.Agents/MIGRATION_PLAN.md` — migration was already completed.
 - `backend/pharmacies/PHARMACY_GUIDE.md` — detailed pharmacy API usage.
 - `backend/pharmacies/IMPLEMENTATION_SUMMARY.md` — pharmacy feature summary.
+
+<!-- SPECKIT START -->
+For additional context about technologies to be used, project structure,
+shell commands, and other important information, read the current plan
+<!-- SPECKIT END -->
