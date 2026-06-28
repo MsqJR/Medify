@@ -251,6 +251,7 @@ CORS_ALLOW_HEADERS = [
 # Email settings (used by forgot-password flow)
 DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='no-reply@medify.local')
 EMAIL_BACKEND = config('EMAIL_BACKEND', default='django.core.mail.backends.console.EmailBackend')
+EMAIL_FILE_PATH = config('EMAIL_FILE_PATH', default=str(BASE_DIR / 'sent_emails'))
 EMAIL_HOST = config('EMAIL_HOST', default='localhost')
 EMAIL_PORT = config('EMAIL_PORT', default=25, cast=int)
 EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='')

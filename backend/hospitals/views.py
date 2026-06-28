@@ -297,6 +297,15 @@ class PublicHospitalViewSet(viewsets.ViewSet):
         ).order_by('display_order', 'created_at')
         return Response(HospitalPhotoSerializer(photos, many=True, context={'request': request}).data)
 
+    @action(detail=False, methods=['get'])
+    def reviews(self, request):
+        website_setup = self.get_website_setup(request)
+        if not website_setup:
+            return Response({'error': 'subdomain required'}, status=status.HTTP_400_BAD_REQUEST)
+        reviews = Review.objects.filter(website_setup=website_setup).select_related('appointment', 'doctor')
+        return Response(ReviewSerializer(reviews, many=True).data)
+
+
 
 class BookingViewSet(viewsets.ViewSet):
     permission_classes = [permissions.AllowAny]

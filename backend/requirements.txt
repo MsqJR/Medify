@@ -20,5 +20,4 @@ google-auth>=2.29.0
 google-api-python-client>=2.130.0
 stripe>=7.0.0
 django-axes>=8.0.0
-
-
+apscheduler>=3.0.0

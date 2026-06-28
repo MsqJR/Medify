@@ -8,59 +8,77 @@ from .models import Appointment
 
 logger = logging.getLogger(__name__)
 
+def send_individual_review_email(appointment_id):
+    """
+    Sends a review email to the patient of the given appointment ID.
+    """
+    try:
+        appointment = Appointment.objects.get(id=appointment_id)
+    except Appointment.DoesNotExist:
+        logger.error(f"Cannot send review email: Appointment {appointment_id} does not exist.")
+        return False
+
+    if appointment.review_email_sent:
+        return False
+
+    # Check if review already exists just in case
+    if hasattr(appointment, 'review'):
+        appointment.review_email_sent = True
+        appointment.save(update_fields=['review_email_sent'])
+        return False
+
+    if not appointment.patient_email:
+        return False
+
+    signer = TimestampSigner()
+    token = signer.sign(str(appointment.id))
+    
+    # Use root domain since review page is global
+    frontend_url = getattr(settings, 'FRONTEND_URL', 'http://localhost:3000')
+    review_link = f"{frontend_url}/review/{token}"
+    
+    doctor_name = appointment.doctor.name
+    hospital_name = appointment.website_setup.business_info.name if hasattr(appointment.website_setup, 'business_info') else 'our hospital'
+    
+    subject = f"How was your visit with {doctor_name}?"
+    message = (
+        f"Dear {appointment.patient_name},\n\n"
+        f"We hope you had a good visit with {doctor_name} at {hospital_name}.\n\n"
+        f"Please take a moment to leave a review of your experience:\n"
+        f"{review_link}\n\n"
+        f"Thank you,\n"
+        f"{hospital_name}"
+    )
+    
+    try:
+        send_mail(
+            subject,
+            message,
+            getattr(settings, 'DEFAULT_FROM_EMAIL', 'no-reply@medify.local'),
+            [appointment.patient_email],
+            fail_silently=False,
+        )
+        
+        appointment.review_email_sent = True
+        appointment.save(update_fields=['review_email_sent'])
+        logger.info(f"Successfully sent review email to {appointment.patient_email} for appointment {appointment.id}")
+        return True
+    except Exception as e:
+        logger.error(f"Failed to send review email for appointment {appointment.id}: {str(e)}")
+        return False
+
+
 def send_review_emails():
     """
-    Finds appointments that were completed 24 hours ago and sends a review email to the patient.
+    Finds appointments that were completed and sends a review email to the patient.
     """
     logger.info("Running send_review_emails job")
     
-    # FOR TESTING PURPOSE: Send emails immediately (removed 24h wait)
     appointments = Appointment.objects.filter(
         status__in=[Appointment.Status.CONFIRMED, 'COMPLETED'],
         review_email_sent=False
     ).exclude(patient_email="")
-
-    signer = TimestampSigner()
     
     for appointment in appointments:
-        try:
-            # Check if review already exists just in case
-            if hasattr(appointment, 'review'):
-                appointment.review_email_sent = True
-                appointment.save(update_fields=['review_email_sent'])
-                continue
+        send_individual_review_email(appointment.id)
 
-            token = signer.sign(str(appointment.id))
-            
-            # Use root domain since review page is global
-            frontend_url = getattr(settings, 'FRONTEND_URL', 'http://localhost:3000')
-            review_link = f"{frontend_url}/review/{token}"
-            
-            doctor_name = appointment.doctor.name
-            hospital_name = appointment.website_setup.business_info.name if hasattr(appointment.website_setup, 'business_info') else 'our hospital'
-            
-            subject = f"How was your visit with {doctor_name}?"
-            message = (
-                f"Dear {appointment.patient_name},\n\n"
-                f"We hope you had a good visit with {doctor_name} at {hospital_name}.\n\n"
-                f"Please take a moment to leave a review of your experience:\n"
-                f"{review_link}\n\n"
-                f"Thank you,\n"
-                f"{hospital_name}"
-            )
-            
-            send_mail(
-                subject,
-                message,
-                getattr(settings, 'DEFAULT_FROM_EMAIL', 'no-reply@medify.local'),
-                [appointment.patient_email],
-                fail_silently=False,
-            )
-            
-            appointment.review_email_sent = True
-            appointment.save(update_fields=['review_email_sent'])
-            
-            logger.info(f"Successfully sent review email to {appointment.patient_email} for appointment {appointment.id}")
-            
-        except Exception as e:
-            logger.error(f"Failed to send review email for appointment {appointment.id}: {str(e)}")

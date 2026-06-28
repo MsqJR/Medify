@@ -81,6 +81,10 @@ export default function LocationMapPicker({ formData, setFormData }: LocationMap
 
   useEffect(() => {
     if (!mapContainerRef.current || typeof window === 'undefined') return
+    
+    // Check if map is already initialized to avoid crash on double mount (Strict Mode)
+    if ((mapContainerRef.current as any)._leaflet_id) return
+
     const L = require('leaflet')
     if (!L) return
 
@@ -92,12 +96,16 @@ export default function LocationMapPicker({ formData, setFormData }: LocationMap
       shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
     })
 
-    const map = L.map(mapContainerRef.current).setView(defaultCenter, 13)
+    const initialCenter: [number, number] = formData.location?.lat && formData.location?.lng
+      ? [formData.location.lat, formData.location.lng]
+      : defaultCenter
+
+    const map = L.map(mapContainerRef.current).setView(initialCenter, 13)
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
     }).addTo(map)
 
-    const marker = L.marker(defaultCenter, { draggable: true }).addTo(map)
+    const marker = L.marker(initialCenter, { draggable: true }).addTo(map)
 
     map.on('click', (e: LeafletMouseEvent) => {
       const { lat, lng } = e.latlng
@@ -120,7 +128,8 @@ export default function LocationMapPicker({ formData, setFormData }: LocationMap
       map.remove()
       mapRef.current = null
     }
-  }, [setFormData])
+  }, [setFormData, formData.location])
+
 
   return (
     <div className="space-y-2">

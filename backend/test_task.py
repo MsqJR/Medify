@@ -24,14 +24,20 @@ appointment = Appointment.objects.create(
     patient_email="taskpatient@example.com",
     start_datetime=timezone.now() - timedelta(hours=25),
     end_datetime=timezone.now() - timedelta(hours=24),
-    status=Appointment.Status.CONFIRMED
+    status=Appointment.Status.PENDING
 )
 
-print(f"Running send_review_emails (Should send 1 email)...")
+print("Confirming appointment (Should trigger immediate email sending)...")
+appointment.status = Appointment.Status.CONFIRMED
+appointment.save()
+
+# Verify that the review email was sent immediately
+appointment.refresh_from_db()
+print(f"review_email_sent is: {appointment.review_email_sent} (Should be True)")
+
+print("Running send_review_emails (Should skip due to review_email_sent)...")
 send_review_emails()
 
-print("Running send_review_emails again (Should skip due to review_email_sent)...")
-send_review_emails()
 
 print("Cleanup...")
 appointment.delete()
