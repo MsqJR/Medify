@@ -64,31 +64,27 @@ function HospitalAIAssistantContent() {
     setMessage('')
     setIsTyping(true)
 
-    if (hasAIChatbot) {
-      try {
-        const response = await chatbotApi.sendMessage({
-          message: userText,
-          conversation_id: conversationId,
-        })
-        if (response.error) {
-          console.warn('Backend chatbot API returned error, falling back to simulation:', response.error)
-          triggerSimulationResponse(userText)
-        } else if (response.data) {
-          setConversationId(response.data.conversation_id)
-          const aiResponse = {
-            id: Date.now() + 1,
-            type: 'ai' as const,
-            content: response.data.assistant.content,
-            timestamp: new Date(),
-          }
-          setMessages((prev) => [...prev, aiResponse])
-          setIsTyping(false)
-        }
-      } catch (err) {
-        console.error('Failed to communicate with backend chatbot, using simulation fallback:', err)
+    try {
+      const response = await chatbotApi.sendMessage({
+        message: userText,
+        conversation_id: conversationId,
+      })
+      if (response.error) {
+        console.warn('Backend chatbot API returned error, falling back to simulation:', response.error)
         triggerSimulationResponse(userText)
+      } else if (response.data) {
+        setConversationId(response.data.conversation_id)
+        const aiResponse = {
+          id: Date.now() + 1,
+          type: 'ai' as const,
+          content: response.data.assistant.content,
+          timestamp: new Date(),
+        }
+        setMessages((prev) => [...prev, aiResponse])
+        setIsTyping(false)
       }
-    } else {
+    } catch (err) {
+      console.error('Failed to communicate with backend chatbot, using simulation fallback:', err)
       triggerSimulationResponse(userText)
     }
   }
@@ -140,113 +136,100 @@ function HospitalAIAssistantContent() {
       </div>
 
       {!hasAIChatbot && (
-        <div className="rounded-xl border border-amber-200 bg-amber-50 px-5 py-4 flex flex-wrap items-center justify-between gap-4">
+        <div className="rounded-xl border border-blue-200 bg-blue-50 px-5 py-4 flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-amber-100 text-amber-800">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-blue-100 text-primary">
               <FiLock size={20} />
             </span>
             <div>
-              <p className="font-semibold text-amber-900 text-sm">Preview Mode Only</p>
-              <p className="text-xs text-amber-700">Use the premium plan to have the chatbot enabled on your live website.</p>
+              <p className="font-semibold text-blue-900 text-sm">AI Chatbot Feature</p>
+              <p className="text-xs text-blue-800">If you want to have this AI chatbot feature enabled on your live website, please subscribe to the Premium Plan.</p>
             </div>
           </div>
           <Button
             variant="primary"
             onClick={() => router.push('/dashboard/hospital/setup')}
-            className="!px-4 !py-2 !text-xs shrink-0 bg-amber-600 hover:bg-amber-700 text-white border-none"
+            className="!px-4 !py-2 !text-xs shrink-0 bg-primary hover:bg-primary/90 text-white border-none"
           >
             Upgrade Plan
           </Button>
         </div>
       )}
 
-      {hasAIChatbot && (
-        <Card className="p-6">
-          <Toggle
-            label="Enable AI Assistant for Patients"
-            checked={enabled}
-            onChange={setEnabled}
-            description="Allow patients to chat with AI assistant on your website for questions about services, appointments, and general medical inquiries"
-          />
-        </Card>
-      )}
-
       {/* Chat Interface */}
-      {(hasAIChatbot ? enabled : true) && (
-        <Card className="p-6">
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-ai rounded-full flex items-center justify-center">
-                <FiMessageSquare className="text-white" size={20} />
-              </div>
-              <div>
-                <h2 className="font-semibold text-neutral-dark">
-                  Patient AI Assistant
-                </h2>
-                <p className="text-sm text-neutral-gray">
-                  Test the chatbot that patients will see
+      <Card className="p-6">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-ai rounded-full flex items-center justify-center">
+              <FiMessageSquare className="text-white" size={20} />
+            </div>
+            <div>
+              <h2 className="font-semibold text-neutral-dark">
+                Patient AI Assistant
+              </h2>
+              <p className="text-sm text-neutral-gray">
+                Test the chatbot that patients will see
+              </p>
+            </div>
+          </div>
+          <div className={`text-xs font-semibold px-3 py-1 rounded-full ${hasAIChatbot ? 'text-primary bg-primary-light' : 'text-blue-700 bg-blue-50 border border-blue-200 animate-pulse'}`}>
+            {hasAIChatbot ? 'Preview Mode' : 'Test Drive Mode (Unsubscribed)'}
+          </div>
+        </div>
+
+        {/* Messages */}
+        <div className="h-96 bg-neutral-light rounded-lg p-4 mb-4 overflow-y-auto space-y-4">
+          {messages.map((msg) => (
+            <div
+              key={msg.id}
+              className={`flex ${msg.type === 'user' ? 'justify-end' : 'justify-start'}`}
+            >
+              <div
+                className={`max-w-[70%] rounded-lg p-4 ${
+                  msg.type === 'user'
+                    ? 'bg-primary text-white'
+                    : 'bg-white border border-neutral-border'
+                }`}
+              >
+                <p className={msg.type === 'user' ? 'text-white' : 'text-neutral-dark'}>
+                  {msg.content}
+                </p>
+                <p
+                  className={`text-xs mt-2 ${
+                    msg.type === 'user' ? 'text-primary-light' : 'text-neutral-gray'
+                  }`}
+                >
+                  {msg.timestamp.toLocaleTimeString()}
                 </p>
               </div>
             </div>
-            <div className={`text-xs font-semibold px-3 py-1 rounded-full ${hasAIChatbot ? 'text-primary bg-primary-light' : 'text-amber-700 bg-amber-50 border border-amber-200 animate-pulse'}`}>
-              {hasAIChatbot ? 'Preview Mode' : 'Test Drive Mode (Unsubscribed)'}
+          ))}
+          {isTyping && (
+            <div className="flex justify-start">
+              <div className="bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-neutral-gray flex items-center gap-1.5 shadow-sm">
+                <span className="h-1.5 w-1.5 rounded-full bg-neutral-gray animate-bounce" style={{ animationDelay: '0ms' }} />
+                <span className="h-1.5 w-1.5 rounded-full bg-neutral-gray animate-bounce" style={{ animationDelay: '150ms' }} />
+                <span className="h-1.5 w-1.5 rounded-full bg-neutral-gray animate-bounce" style={{ animationDelay: '300ms' }} />
+              </div>
             </div>
-          </div>
+          )}
+        </div>
 
-          {/* Messages */}
-          <div className="h-96 bg-neutral-light rounded-lg p-4 mb-4 overflow-y-auto space-y-4">
-            {messages.map((msg) => (
-              <div
-                key={msg.id}
-                className={`flex ${msg.type === 'user' ? 'justify-end' : 'justify-start'}`}
-              >
-                <div
-                  className={`max-w-[70%] rounded-lg p-4 ${
-                    msg.type === 'user'
-                      ? 'bg-primary text-white'
-                      : 'bg-white border border-neutral-border'
-                  }`}
-                >
-                  <p className={msg.type === 'user' ? 'text-white' : 'text-neutral-dark'}>
-                    {msg.content}
-                  </p>
-                  <p
-                    className={`text-xs mt-2 ${
-                      msg.type === 'user' ? 'text-primary-light' : 'text-neutral-gray'
-                    }`}
-                  >
-                    {msg.timestamp.toLocaleTimeString()}
-                  </p>
-                </div>
-              </div>
-            ))}
-            {isTyping && (
-              <div className="flex justify-start">
-                <div className="bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-neutral-gray flex items-center gap-1.5 shadow-sm">
-                  <span className="h-1.5 w-1.5 rounded-full bg-neutral-gray animate-bounce" style={{ animationDelay: '0ms' }} />
-                  <span className="h-1.5 w-1.5 rounded-full bg-neutral-gray animate-bounce" style={{ animationDelay: '150ms' }} />
-                  <span className="h-1.5 w-1.5 rounded-full bg-neutral-gray animate-bounce" style={{ animationDelay: '300ms' }} />
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Input */}
-          <form onSubmit={handleSend} className="flex gap-3">
-            <Input
-              placeholder="Ask a question as a patient would..."
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              className="flex-1"
-              disabled={isTyping}
-            />
-            <Button type="submit" variant="primary" disabled={isTyping}>
-              <FiSend className="mr-2" />
-              Send
-            </Button>
-          </form>
-        </Card>
-      )}
+        {/* Input */}
+        <form onSubmit={handleSend} className="flex gap-3">
+          <Input
+            placeholder="Ask a question as a patient would..."
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            className="flex-1"
+            disabled={isTyping}
+          />
+          <Button type="submit" variant="primary" disabled={isTyping}>
+            <FiSend className="mr-2" />
+            Send
+          </Button>
+        </form>
+      </Card>
 
       {/* Features preview */}
       <div className="grid grid-cols-2 gap-6 mb-6">
@@ -282,9 +265,9 @@ function HospitalAIAssistantContent() {
           </p>
         </Card>
         <Card className="p-4 sm:p-6">
-          <h3 className="font-semibold text-neutral-dark mb-2 text-sm sm:text-base">General Inquiries</h3>
+          <h3 className="font-semibold text-neutral-dark mb-2 text-sm sm:text-base">Symptom Triage</h3>
           <p className="text-xs sm:text-sm text-neutral-gray">
-            Answer common patient questions about location, hours, and contact information
+            Identify emergency red flags and provide safe guidance on when to seek immediate or routine care
           </p>
         </Card>
       </div>

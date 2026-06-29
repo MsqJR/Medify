@@ -112,7 +112,7 @@ function DoctorModal({ doc, onClose }: { doc: Doctor; onClose: () => void }) {
             <div className="w-32 h-40 sm:w-36 sm:h-44 rounded-2xl overflow-hidden bg-neutral-light border border-neutral-border shadow-sm">
               {imageUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={imageUrl} alt={doc.name} className="h-full w-full object-cover" />
+                <img src={imageUrl} alt={doc.name} className="h-full w-full object-cover" referrerPolicy="no-referrer" />
               ) : (
                 <div
                   className="flex h-full w-full items-center justify-center text-5xl font-bold"
@@ -160,7 +160,7 @@ function DoctorModal({ doc, onClose }: { doc: Doctor; onClose: () => void }) {
                   className="inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold"
                   style={{ backgroundColor: 'var(--hospital-surface-alt)', color: 'var(--hospital-text-muted)' }}
                 >
-                  <FiStar size={11} /> {experience}
+                  Years of experience: {experience}
                 </span>
               )}
             </div>
@@ -448,7 +448,7 @@ export default function DoctorsListClient({ title, subtitle, doctors, fetchError
                       <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent z-10" />
                       {imageUrl ? (
                         // eslint-disable-next-line @next/next/no-img-element
-                        <img src={imageUrl} alt={doc.name} className="h-48 w-full object-cover" />
+                        <img src={imageUrl} alt={doc.name} className="h-48 w-full object-cover" referrerPolicy="no-referrer" />
                       ) : (
                         <div
                           className="flex h-48 items-center justify-center text-4xl font-semibold"
@@ -504,7 +504,7 @@ export default function DoctorsListClient({ title, subtitle, doctors, fetchError
                             className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold"
                             style={{ backgroundColor: 'var(--hospital-primary-soft)', color: 'var(--hospital-primary-strong)' }}
                           >
-                            <FiStar className="h-3.5 w-3.5" /> {experience}
+                            Years of experience: {experience}
                           </div>
                         ) : null}
                       </div>

@@ -102,9 +102,9 @@ export default function TestimonialsCarousel({ testimonials }: TestimonialsCarou
           scrollbarWidth: 'none',
         }}
       >
-        {testimonials.map((item) => (
+        {testimonials.map((item, idx) => (
           <div
-            key={item.name}
+            key={`${item.name}-${idx}`}
             className="flex-shrink-0 w-[290px] sm:w-[350px] snap-start flex flex-col gap-4 p-7 shadow-sm transition-shadow duration-300 hover:shadow-md"
             style={{
               backgroundColor: 'var(--hospital-surface)',

@@ -520,8 +520,14 @@ function DoctorModal({ mode, initialData, departments, onClose, onSave, saving, 
                     onChange={e => set('specialty', e.target.value)} />
                 </Field>
                 <Field label="Experience">
-                  <input className={INPUT} value={form.experience} placeholder="e.g. 10 years"
-                    onChange={e => set('experience', e.target.value)} />
+                  <input
+                    className={INPUT}
+                    type="number"
+                    min="0"
+                    value={form.experience}
+                    placeholder="e.g. 10"
+                    onChange={e => set('experience', e.target.value)}
+                  />
                 </Field>
               </div>
 
@@ -555,7 +561,7 @@ function DoctorModal({ mode, initialData, departments, onClose, onSave, saving, 
                   <div className="h-16 w-16 overflow-hidden rounded-xl border border-neutral-border bg-neutral-light flex items-center justify-center">
                     {previewUrl ? (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img src={previewUrl} alt="Doctor" className="h-full w-full object-cover" />
+                      <img src={previewUrl} alt="Doctor" className="h-full w-full object-cover" referrerPolicy="no-referrer" />
                     ) : (
                       <span className="text-xs text-neutral-gray">No photo</span>
                     )}
@@ -592,22 +598,7 @@ function DoctorModal({ mode, initialData, departments, onClose, onSave, saving, 
                 </div>
               </Field>
 
-              <Field label="Photo URL">
-                <input
-                  className={INPUT}
-                  value={form.image_url}
-                  placeholder="https://example.com/doctor.jpg"
-                  onChange={(event) => {
-                    const nextUrl = event.target.value;
-                    setForm((prev) => ({
-                      ...prev,
-                      image_url: nextUrl,
-                      image: null,
-                      imagePreview: nextUrl.trim(),
-                    }));
-                  }}
-                />
-              </Field>
+
 
               {mode === 'edit' && (
                 <label className="flex items-center gap-2 cursor-pointer select-none">
@@ -672,6 +663,7 @@ function ImportModal({ rows, departments, onClose, onConfirm, importing }: {
                         src={r.photo}
                         alt=""
                         className="h-8 w-8 rounded-full border border-neutral-border object-cover"
+                        referrerPolicy="no-referrer"
                       />
                     ) : (
                       <span className="text-neutral-gray">--</span>
@@ -965,12 +957,13 @@ export default function HospitalDoctorsPage() {
     bio: string;
     department: string;
     image_url?: string;
+    image?: null;
     is_active?: boolean;
     age?: number;
     gender?: string;
     email?: string;
   } => {
-    const shared = {
+    const shared: any = {
       name: form.name.trim(),
       specialty: form.specialty.trim(),
       bio,
@@ -991,14 +984,28 @@ export default function HospitalDoctorsPage() {
         }
       });
       payload.append('image', form.image);
+      payload.append('image_url', '');
       return payload;
     }
 
+    if (!form.imagePreview) {
+      return {
+        ...shared,
+        image_url: '',
+        image: null,
+      };
+    }
+
     const imageUrl = form.image_url.trim();
-    return {
-      ...shared,
-      ...(imageUrl.startsWith('http://') || imageUrl.startsWith('https://') ? { image_url: imageUrl } : {}),
-    };
+    if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
+      return {
+        ...shared,
+        image_url: imageUrl,
+        image: null,
+      };
+    }
+
+    return shared;
   };
 
   // ── Add doctor ─────────────────────────────────────────────────────────────
@@ -1330,7 +1337,7 @@ export default function HospitalDoctorsPage() {
                           <div className="h-10 w-10 flex-shrink-0 overflow-hidden rounded-full bg-primary-light text-primary text-sm font-bold flex items-center justify-center">
                             {avatarUrl ? (
                               // eslint-disable-next-line @next/next/no-img-element
-                              <img src={avatarUrl} alt={doc.name} className="h-full w-full object-cover" />
+                              <img src={avatarUrl} alt={doc.name} className="h-full w-full object-cover" referrerPolicy="no-referrer" />
                             ) : (
                               initials(doc.name)
                             )}
@@ -1453,7 +1460,7 @@ export default function HospitalDoctorsPage() {
                 <div className="md:col-span-1 flex flex-col items-center text-center space-y-5">
                   <div className="h-36 w-36 overflow-hidden rounded-full shadow-xl border-4 border-white ring-4 ring-primary/20 bg-primary-light flex items-center justify-center text-5xl font-bold text-primary">
                     {viewDoctor.image_url_resolved || viewDoctor.image_url ? (
-                      <img src={normalizeLogoUrl(viewDoctor.image_url_resolved || viewDoctor.image_url) || ''} alt={viewDoctor.name} className="h-full w-full object-cover" />
+                      <img src={normalizeLogoUrl(viewDoctor.image_url_resolved || viewDoctor.image_url) || ''} alt={viewDoctor.name} className="h-full w-full object-cover" referrerPolicy="no-referrer" />
                     ) : (
                       initials(viewDoctor.name)
                     )}

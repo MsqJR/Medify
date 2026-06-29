@@ -80,6 +80,7 @@ export default async function PublicHospitalHighlights({
   let departmentsCount = 0;
   let yearsOfExcellence = '25';
   let patientsTreated = '50k+';
+  let hasReviewSystem = false;
 
   let displayTestimonials = testimonials;
 
@@ -103,6 +104,7 @@ export default async function PublicHospitalHighlights({
         ? profile.business_info.years_of_experience.toString()
         : profile.years_of_excellence?.toString() || '25';
       patientsTreated = profile.patients_treated || '50k+';
+      hasReviewSystem = Array.isArray(profile.allowed_features) && profile.allowed_features.includes('review_system');
     }
 
     // Fetch dynamic reviews
@@ -111,14 +113,25 @@ export default async function PublicHospitalHighlights({
     });
     if (reviewsRes.ok) {
       const reviews = await reviewsRes.json();
-      const mapped = (reviews || [])
-        .filter((r: any) => r.comment && r.comment.trim() !== '')
-        .map((r: any) => ({
-          quote: r.comment,
+      const mapped = (reviews || []).map((r: any) => {
+        let fallbackQuote = 'Excellent service and professional care.';
+        if (r.rating === 5) {
+          fallbackQuote = 'Exceptional care! The doctors and staff were extremely supportive and professional.';
+        } else if (r.rating === 4) {
+          fallbackQuote = 'Very good experience. Professional staff and comfortable environment.';
+        } else if (r.rating === 3) {
+          fallbackQuote = 'Satisfactory service, though there was some waiting time.';
+        } else if (r.rating <= 2) {
+          fallbackQuote = 'Average experience. The staff was helpful but clinic waiting times could be better.';
+        }
+
+        return {
+          quote: r.comment && r.comment.trim() !== '' ? r.comment : fallbackQuote,
           name: r.appointment_details?.patient_name || 'Anonymous Patient',
           role: r.appointment_details?.doctor_name ? `Patient of Dr. ${r.appointment_details.doctor_name}` : 'Patient',
           rating: r.rating || 5,
-        }));
+        };
+      });
       if (mapped.length > 0) {
         displayTestimonials = mapped;
       }
@@ -274,37 +287,39 @@ export default async function PublicHospitalHighlights({
       </section>
 
       {/* ── Section 3: Testimonials ─────────────────────────────────────── */}
-      <section
-        className="py-20"
-        style={{ backgroundColor: 'var(--hospital-surface-alt)' }}
-      >
-        <div className="mx-auto max-w-7xl px-4 sm:px-6">
-          {/* Header */}
-          <div className="mx-auto max-w-2xl text-center">
-            <p
-              className="text-xs font-bold uppercase tracking-[0.25em]"
-              style={{ color: 'var(--hospital-text-muted)' }}
-            >
-              Patient Stories
-            </p>
-            <h2
-              className="mt-3 text-3xl font-extrabold sm:text-4xl"
-              style={{ color: 'var(--hospital-text)' }}
-            >
-              What our patients say
-            </h2>
-            <p
-              className="mt-4 text-base leading-relaxed"
-              style={{ color: 'var(--hospital-text-muted)' }}
-            >
-              Real experiences from real people who trusted us with their health.
-            </p>
-          </div>
+      {hasReviewSystem && (
+        <section
+          className="py-20"
+          style={{ backgroundColor: 'var(--hospital-surface-alt)' }}
+        >
+          <div className="mx-auto max-w-7xl px-4 sm:px-6">
+            {/* Header */}
+            <div className="mx-auto max-w-2xl text-center">
+              <p
+                className="text-xs font-bold uppercase tracking-[0.25em]"
+                style={{ color: 'var(--hospital-text-muted)' }}
+              >
+                Patient Stories
+              </p>
+              <h2
+                className="mt-3 text-3xl font-extrabold sm:text-4xl"
+                style={{ color: 'var(--hospital-text)' }}
+              >
+                What our patients say
+              </h2>
+              <p
+                className="mt-4 text-base leading-relaxed"
+                style={{ color: 'var(--hospital-text-muted)' }}
+              >
+                Real experiences from real people who trusted us with their health.
+              </p>
+            </div>
 
-          {/* Testimonial Cards */}
-          <TestimonialsCarousel testimonials={displayTestimonials} />
-        </div>
-      </section>
+            {/* Testimonial Cards */}
+            <TestimonialsCarousel testimonials={displayTestimonials} />
+          </div>
+        </section>
+      )}
 
       {/* ── Section 4: CTA Banner ───────────────────────────────────────── */}
       <section

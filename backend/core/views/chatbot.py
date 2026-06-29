@@ -56,20 +56,23 @@ class ChatbotAPIView(APIView):
 
         # ── Subscription gate (hospital users only) ──────────────────────────
         # Pharmacy users use the RAG pipeline which is not plan-gated.
+        # Website owner is allowed to test-drive / preview their chatbot inside the admin panel.
         if getattr(website_setup.user, 'business_type', '') == 'hospital':
-            from core.services.subscription import has_feature_access
-            if not has_feature_access(website_setup, 'ai_chatbot'):
-                return Response(
-                    {
-                        'detail': (
-                            'This feature is not included in your current plan. '
-                            'Please upgrade your subscription to access the AI chatbot.'
-                        ),
-                        'code': 'FEATURE_LOCKED',
-                        'feature': 'ai_chatbot',
-                    },
-                    status=status.HTTP_403_FORBIDDEN,
-                )
+            is_owner = request.user.is_authenticated and request.user == website_setup.user
+            if not is_owner:
+                from core.services.subscription import has_feature_access
+                if not has_feature_access(website_setup, 'ai_chatbot'):
+                    return Response(
+                        {
+                            'detail': (
+                                'This feature is not included in your current plan. '
+                                'Please upgrade your subscription to access the AI chatbot.'
+                            ),
+                            'code': 'FEATURE_LOCKED',
+                            'feature': 'ai_chatbot',
+                        },
+                        status=status.HTTP_403_FORBIDDEN,
+                    )
 
         ai_settings = self._get_ai_settings(website_setup)
         rate_limit_response = self._enforce_rate_limit(request, website_setup, ai_settings)

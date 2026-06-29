@@ -476,6 +476,34 @@ class MedicalChatbotService:
             except json.JSONDecodeError:
                 pass
 
+        # Fallback: Parse malformed JSON using regexes for each expected key
+        result = {}
+        for field in ['answer', 'confidence_note', 'disclaimer', 'urgency']:
+            # Match "field": "value" (supporting escaped quotes and multi-line strings)
+            pattern = rf'"{field}"\s*:\s*"((?:[^"\\]|\\.)*)"'
+            m = re.search(pattern, candidate, re.DOTALL)
+            if m:
+                # Unescape escaped quotes/newlines
+                val = m.group(1).replace(r'\"', '"').replace(r'\n', '\n')
+                result[field] = val
+
+        m = re.search(r'"seek_emergency_care"\s*:\s*(true|false)', candidate, re.IGNORECASE)
+        if m:
+            result['seek_emergency_care'] = m.group(1).lower() == 'true'
+
+        for field in ['follow_up_questions', 'possible_conditions', 'recommended_specialties', 'guidance']:
+            # Find the array block like "field": [ ... ]
+            pattern = rf'"{field}"\s*:\s*\[([^\]]*)\]'
+            m = re.search(pattern, candidate, re.DOTALL)
+            if m:
+                array_content = m.group(1)
+                # Find all quoted strings inside the array
+                items = re.findall(r'"((?:[^"\\]|\\.)*)"', array_content, re.DOTALL)
+                result[field] = [item.replace(r'\"', '"').replace(r'\n', '\n') for item in items]
+
+        if 'answer' in result:
+            return result
+
         return {
             'answer': candidate,
             'follow_up_questions': cls._default_follow_up_questions(candidate),

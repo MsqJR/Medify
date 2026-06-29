@@ -94,6 +94,43 @@ class DepartmentViewSet(viewsets.ModelViewSet):
         serializer.save(website_setup=website_setup)
 
 
+def download_image_to_filefield(image_url):
+    if not image_url or not isinstance(image_url, str):
+        return None
+    image_url = image_url.strip()
+    if not (image_url.startswith('http://') or image_url.startswith('https://')):
+        return None
+    try:
+        import urllib.request
+        import uuid
+        from django.core.files.base import ContentFile
+
+        req = urllib.request.Request(
+            image_url,
+            headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'}
+        )
+        with urllib.request.urlopen(req, timeout=10) as response:
+            content_type = response.headers.get('Content-Type', '')
+            if 'image' not in content_type.lower():
+                return None
+            
+            ext = 'jpg'
+            if 'png' in content_type.lower():
+                ext = 'png'
+            elif 'gif' in content_type.lower():
+                ext = 'gif'
+            elif 'webp' in content_type.lower():
+                ext = 'webp'
+            
+            filename = f"doctor_{uuid.uuid4().hex}.{ext}"
+            return ContentFile(response.read(), name=filename)
+    except Exception as e:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Failed to download image from {image_url}: {e}")
+        return None
+
+
 class DoctorViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = DoctorSerializer
@@ -113,12 +150,31 @@ class DoctorViewSet(viewsets.ModelViewSet):
         payload = {'website_setup': website_setup}
         if self.request.FILES.get('image'):
             payload['image_url'] = ''
+        else:
+            image_url = self.request.data.get('image_url') or ''
+            if image_url.strip():
+                downloaded = download_image_to_filefield(image_url)
+                if downloaded:
+                    payload['image'] = downloaded
         serializer.save(**payload)
 
     def perform_update(self, serializer):
         if self.request.FILES.get('image'):
             serializer.save(image_url='')
             return
+            
+        if 'image_url' in self.request.data:
+            image_url = self.request.data.get('image_url') or ''
+            if image_url.strip():
+                downloaded = download_image_to_filefield(image_url)
+                if downloaded:
+                    serializer.save(image=downloaded)
+                else:
+                    serializer.save(image=None)
+            else:
+                serializer.save(image=None, image_url='')
+            return
+
         serializer.save()
 
     def destroy(self, request, *args, **kwargs):

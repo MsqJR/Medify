@@ -18,6 +18,12 @@ def send_individual_review_email(appointment_id):
         logger.error(f"Cannot send review email: Appointment {appointment_id} does not exist.")
         return False
 
+    # Only send review emails if the website owner has the Premium Plan (review_system feature enabled)
+    from core.services.subscription import has_feature_access
+    if not has_feature_access(appointment.website_setup, 'review_system'):
+        logger.info(f"Skipping review email for appointment {appointment.id}: website setup does not have review_system permission.")
+        return False
+
     if appointment.review_email_sent:
         return False
 

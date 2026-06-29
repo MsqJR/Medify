@@ -380,7 +380,7 @@ export default function HospitalDepartmentsPage() {
                 {doctors.filter(d => d.department === viewingDept.id).map(doc => (
                   <div key={doc.id} className="flex items-start gap-3 p-3 rounded-xl border border-neutral-200 bg-white hover:border-primary/30 hover:shadow-md hover:shadow-primary/5 transition-all">
                     {doc.image_url_resolved || doc.image_url ? (
-                      <img src={doc.image_url_resolved || doc.image_url!} alt={doc.name} className="w-12 h-12 rounded-full object-cover shadow-sm" />
+                      <img src={doc.image_url_resolved || doc.image_url!} alt={doc.name} className="w-12 h-12 rounded-full object-cover shadow-sm" referrerPolicy="no-referrer" />
                     ) : (
                       <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center shrink-0">
                         <Users className="w-5 h-5 text-primary" />

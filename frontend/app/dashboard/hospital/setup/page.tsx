@@ -37,7 +37,6 @@ const PLANS = [
       'Hospital website',
       'Doctors & departments',
       'Patient Portal',
-      'Review system',
       'Basic contact forms',
       'Appointment system',
     ],
@@ -52,7 +51,8 @@ const PLANS = [
       'Everything in Basic',
       'Medical Q&A chatbot',
       'Custom UI Theme',
-      'Branding Setup',
+      'Review system',
+      'WhatsApp button integration',
     ],
   },
 ]
@@ -75,11 +75,10 @@ const resolvePlanKey = (payload: {
 
 const buildStoredFeatures = (state: FeatureState) => ({
   _plan: state.plan,
-  reviewSystem: true,
+  reviewSystem: state.plan === 'standard',
   patientPortal: true,
   aiChatbot: state.plan === 'standard',
   customTheme: state.plan === 'standard',
-  brandingSetup: state.plan === 'standard',
   prescriptionRefill: false,
 })
 
@@ -215,7 +214,7 @@ function HospitalSetupContent() {
         const token = localStorage.getItem('access_token')
         if (!token) return
         await websiteSetupApiV2.update({
-          review_system: true,
+          review_system: formData.plan === 'standard',
           patient_portal: true,
           ai_chatbot: formData.plan === 'standard',
           prescription_refill: false,

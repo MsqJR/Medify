@@ -2,19 +2,12 @@
 
 import React, { useEffect, useLayoutEffect, useState, useRef } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
-import { FiBell, FiSearch, FiMenu } from 'react-icons/fi'
+import { FiSearch, FiMenu } from 'react-icons/fi'
 import { BrandLogo } from '@/components/pharmacy/BrandLogo'
-import { getScopedItem, normalizeLogoUrl, setScopedItem } from '@/lib/storage'
+import { getScopedItem, normalizeLogoUrl } from '@/lib/storage'
 
 interface TopbarProps {
   onMenuClick?: () => void
-}
-
-type NotificationItem = {
-  id: string
-  message: string
-  timestamp: string
-  read: boolean
 }
 
 type SearchItem = {
@@ -26,37 +19,12 @@ type SearchItem = {
   getHref?: (userType: 'hospital' | 'pharmacy') => string
 }
 
-const fallbackNotifications: NotificationItem[] = [
-  {
-    id: '1',
-    message: 'New order received for 12 prescription items.',
-    timestamp: '5m ago',
-    read: false,
-  },
-  {
-    id: '2',
-    message: 'Template activated successfully.',
-    timestamp: '1h ago',
-    read: false,
-  },
-  {
-    id: '3',
-    message: 'Your subscription renews in 3 days.',
-    timestamp: 'Yesterday',
-    read: true,
-  },
-]
-
 export const Topbar: React.FC<TopbarProps> = ({ onMenuClick }) => {
   const router = useRouter()
   const pathname = usePathname()
   const [userName, setUserName] = useState('User')
   const [userLogo, setUserLogo] = useState<string | null>(null)
   const [currentUserType, setCurrentUserType] = useState<'hospital' | 'pharmacy'>('hospital')
-  const [notifications, setNotifications] = useState<NotificationItem[]>(fallbackNotifications)
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false)
-  const dropdownRef = useRef<HTMLDivElement>(null)
-  const dropdownMenuRef = useRef<HTMLDivElement>(null)
   const searchRef = useRef<HTMLDivElement>(null)
   const searchDropdownRef = useRef<HTMLDivElement>(null)
   const [searchQuery, setSearchQuery] = useState('')
@@ -206,45 +174,6 @@ export const Topbar: React.FC<TopbarProps> = ({ onMenuClick }) => {
     setUserLogo(resolvedUserLogo)
   }, [pathname])
 
-  useEffect(() => {
-    const storedNotifications = getScopedItem('notifications')
-    if (storedNotifications) {
-      try {
-        const parsed = JSON.parse(storedNotifications)
-        if (Array.isArray(parsed) && parsed.length) {
-          setNotifications(parsed)
-        }
-      } catch {
-        // ignore parse errors, fallback data already set
-      }
-    }
-  }, [])
-
-  useEffect(() => {
-    setScopedItem('notifications', JSON.stringify(notifications))
-  }, [notifications])
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      const targetNode = event.target as Node
-      const clickedInsideTrigger = dropdownRef.current?.contains(targetNode)
-      const clickedInsideMenu = dropdownMenuRef.current?.contains(targetNode)
-      if (!clickedInsideTrigger && !clickedInsideMenu) {
-        setIsDropdownOpen(false)
-      }
-    }
-
-    if (isDropdownOpen) {
-      document.addEventListener('mousedown', handleClickOutside)
-    } else {
-      document.removeEventListener('mousedown', handleClickOutside)
-    }
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside)
-    }
-  }, [isDropdownOpen])
-
   useLayoutEffect(() => {
     if (!isSearchOpen || !searchRef.current) {
       setSearchDropdownRect(null)
@@ -276,29 +205,6 @@ export const Topbar: React.FC<TopbarProps> = ({ onMenuClick }) => {
       document.removeEventListener('mousedown', handleSearchClickOutside)
     }
   }, [isSearchOpen])
-
-  const unreadCount = notifications.filter((notification) => !notification.read).length
-
-
-  const toggleDropdown = () => {
-    setIsDropdownOpen((prev) => !prev)
-  }
-
-  const markAsRead = (id: string) => {
-    setNotifications((prev) =>
-      prev.map((notification) =>
-        notification.id === id ? { ...notification, read: true } : notification
-      )
-    )
-  }
-
-  const markAllAsRead = () => {
-    setNotifications((prev) => prev.map((notification) => ({ ...notification, read: true })))
-  }
-
-  const clearNotifications = () => {
-    setNotifications([])
-  }
 
   const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const value = event.target.value
@@ -400,82 +306,21 @@ export const Topbar: React.FC<TopbarProps> = ({ onMenuClick }) => {
             </div>
           </form>
         </div>
-      <div className="flex items-center gap-2 sm:gap-4 ml-auto shrink-0">
-        <div className="relative" ref={dropdownRef}>
-          <button
-            onClick={toggleDropdown}
-            className="relative p-2 text-neutral-gray hover:text-neutral-dark transition-colors"
-            aria-label="Notifications"
-          >
-            <FiBell size={20} />
-            {unreadCount > 0 && (
-              <span className="absolute top-1 right-1 w-2 h-2 bg-error rounded-full"></span>
-            )}
-          </button>
-          {isDropdownOpen && (
-            <div
-              ref={dropdownMenuRef}
-              className="fixed top-16 right-4 w-72 bg-white border border-neutral-border rounded-lg shadow-lg z-50"
-            >
-              <div className="flex items-center justify-between p-3 border-b border-neutral-border">
-                <div>
-                  <p className="text-sm font-semibold text-neutral-dark">Notifications</p>
-                  <p className="text-xs text-neutral-gray">
-                    {unreadCount > 0 ? `${unreadCount} unread` : 'All caught up'}
-                  </p>
-                </div>
-                <button
-                  onClick={markAllAsRead}
-                  className="text-xs text-primary hover:underline"
-                  disabled={unreadCount === 0}
-                >
-                  Mark all read
-                </button>
-              </div>
-              <div>
-                {notifications.length === 0 ? (
-                  <p className="text-sm text-center text-neutral-gray py-6">No notifications yet.</p>
-                ) : (
-                  notifications.map((notification) => (
-                    <button
-                      key={notification.id}
-                      onClick={() => markAsRead(notification.id)}
-                      className={`w-full text-left px-4 py-3 text-sm border-b border-neutral-border last:border-b-0 transition-colors ${
-                        notification.read ? 'bg-white' : 'bg-neutral-light/60'
-                      }`}
-                    >
-                      <p className="text-neutral-dark">{notification.message}</p>
-                      <span className="text-xs text-neutral-gray">{notification.timestamp}</span>
-                    </button>
-                  ))
-                )}
-              </div>
-              {notifications.length > 0 && (
-                <button
-                  onClick={clearNotifications}
-                  className="w-full text-xs text-error py-2 border-t border-neutral-border hover:bg-neutral-light transition-colors"
-                >
-                  Clear all
-                </button>
-              )}
+        <div className="flex items-center gap-2 sm:gap-4 ml-auto shrink-0">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full overflow-hidden">
+              <BrandLogo
+                src={userLogo}
+                alt={`${userName} logo`}
+                fallbackText={userName}
+                imageClassName="h-full w-full object-cover"
+                fallbackClassName="h-full w-full bg-primary flex items-center justify-center text-white font-semibold text-sm sm:text-base"
+              />
             </div>
-          )}
-        </div>
-        <div className="flex items-center gap-2 sm:gap-3">
-          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full overflow-hidden">
-            <BrandLogo
-              src={userLogo}
-              alt={`${userName} logo`}
-              fallbackText={userName}
-              imageClassName="h-full w-full object-cover"
-              fallbackClassName="h-full w-full bg-primary flex items-center justify-center text-white font-semibold text-sm sm:text-base"
-            />
+            <span className="text-neutral-dark font-medium text-sm sm:text-base hidden sm:inline">{userName}</span>
           </div>
-          <span className="text-neutral-dark font-medium text-sm sm:text-base hidden sm:inline">{userName}</span>
         </div>
       </div>
-    </div>
     </>
   )
 }
-

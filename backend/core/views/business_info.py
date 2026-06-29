@@ -39,6 +39,43 @@ class BusinessInfoViewSet(viewsets.ModelViewSet):
     def retrieve(self, request, *args, **kwargs):
         return self.list(request, *args, **kwargs)
 
+    def _parse_working_hours(self, request):
+        # Convert request.data (which may be a QueryDict) into a standard Python dict
+        # to bypass QueryDict's custom __getitem__ list-forcing behavior.
+        data = {k: v for k, v in request.data.items()}
+        working_hours = data.get('working_hours')
+        if isinstance(working_hours, str):
+            import json
+            try:
+                data['working_hours'] = json.loads(working_hours)
+            except json.JSONDecodeError:
+                pass
+        return data
+
+    def _update_subdomain_from_name(self, request, website_setup, name):
+        if not name:
+            return
+        import re
+        # Convert name to lowercase, alphanumeric characters only (strip spaces)
+        subdomain_slug = re.sub(r'[^a-z0-9]', '', name.lower())
+        if subdomain_slug:
+            # Ensure "hospital" suffix for hospital business type, and "pharmacy" suffix for pharmacy business type
+            business_type = getattr(website_setup.user, 'business_type', '')
+            if business_type == 'hospital' and not subdomain_slug.endswith('hospital'):
+                subdomain_slug = f"{subdomain_slug}hospital"
+            elif business_type == 'pharmacy' and not subdomain_slug.endswith('pharmacy'):
+                subdomain_slug = f"{subdomain_slug}pharmacy"
+
+            base_slug = subdomain_slug
+            counter = 1
+            while WebsiteSetup.objects.filter(subdomain__iexact=subdomain_slug).exclude(user=request.user).exists():
+                subdomain_slug = f"{base_slug}{counter}"
+                counter += 1
+            
+            if website_setup.subdomain != subdomain_slug:
+                website_setup.subdomain = subdomain_slug
+                website_setup.save(update_fields=['subdomain', 'updated_at'])
+
     def create(self, request, *args, **kwargs):
         website_setup, _ = WebsiteSetup.objects.get_or_create(
             user=request.user,
@@ -49,18 +86,22 @@ class BusinessInfoViewSet(viewsets.ModelViewSet):
                 {'error': 'Business info already exists. Use update endpoint.'},
                 status=status.HTTP_400_BAD_REQUEST
             )
-        serializer = self.get_serializer(data=request.data)
+        data = self._parse_working_hours(request)
+        serializer = self.get_serializer(data=data)
         serializer.is_valid(raise_exception=True)
         serializer.save(website_setup=website_setup)
         business_info = BusinessInfo.objects.get(website_setup=website_setup)
+        self._update_subdomain_from_name(request, website_setup, data.get('name'))
         response_serializer = BusinessInfoSerializer(business_info, context={'request': request})
         return Response(response_serializer.data, status=status.HTTP_201_CREATED)
 
     def update(self, request, *args, **kwargs):
         business_info = self.get_object()
-        serializer = self.get_serializer(business_info, data=request.data, partial=True)
+        data = self._parse_working_hours(request)
+        serializer = self.get_serializer(business_info, data=data, partial=True)
         serializer.is_valid(raise_exception=True)
         serializer.save()
+        self._update_subdomain_from_name(request, business_info.website_setup, data.get('name'))
         response_serializer = BusinessInfoSerializer(business_info, context={'request': request})
         return Response(response_serializer.data)
 
@@ -68,9 +109,11 @@ class BusinessInfoViewSet(viewsets.ModelViewSet):
         # Handle PATCH requests to /business-info/ (without ID)
         # This is called by the frontend
         business_info = self.get_object()
-        serializer = self.get_serializer(business_info, data=request.data, partial=True)
+        data = self._parse_working_hours(request)
+        serializer = self.get_serializer(business_info, data=data, partial=True)
         serializer.is_valid(raise_exception=True)
         serializer.save()
+        self._update_subdomain_from_name(request, business_info.website_setup, data.get('name'))
         response_serializer = BusinessInfoSerializer(business_info, context={'request': request})
         return Response(response_serializer.data)
 

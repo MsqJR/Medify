@@ -125,7 +125,7 @@ function DoctorCard({ doc, selected, onClick }: { doc: Doctor; selected: boolean
       >
         {imageUrl
           // eslint-disable-next-line @next/next/no-img-element
-          ? <img src={imageUrl} alt={doc.name} className="h-full w-full object-cover" />
+          ? <img src={imageUrl} alt={doc.name} className="h-full w-full object-cover" referrerPolicy="no-referrer" />
           : doc.name.charAt(0)
         }
       </div>
@@ -315,7 +315,7 @@ function BookingSummary({
               const img = normalizeLogoUrl(doctor.image_url_resolved || doctor.image_url);
               return img
                 // eslint-disable-next-line @next/next/no-img-element
-                ? <img src={img} alt={doctor.name} className="h-full w-full object-cover" />
+                ? <img src={img} alt={doctor.name} className="h-full w-full object-cover" referrerPolicy="no-referrer" />
                 : doctor.name.charAt(0);
             })()}
           </div>

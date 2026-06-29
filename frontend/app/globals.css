@@ -224,3 +224,9 @@
   }
 }
 
+/* Hide default browser reveal password/clear icons in Edge / IE */
+input::-ms-reveal,
+input::-ms-clear {
+  display: none;
+}
+

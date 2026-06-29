@@ -49,7 +49,7 @@ export default async function HospitalLayout({ children, params }: LayoutProps) 
     const chatbotName = theme.chatbotName || `${businessInfo?.name || profile?.name || 'Hospital'} Medical AI`;
     const chatbotColor = theme.chatbotColor || primaryColor;
     const emergencyNumber = theme.emergencyNumber || '911';
-    const logoUrl = normalizeLogoUrl(businessInfo?.logo_url || businessInfo?.logo || profile?.logo);
+    const logoUrl = normalizeLogoUrl((businessInfo as any)?.logo_url || (businessInfo as any)?.logo || profile?.logo);
 
     // Load Google Font
     const fontUrl = `https://fonts.googleapis.com/css2?family=${fontFamily.replace(/ /g, '+')}:wght@400;500;600;700&display=swap`;
@@ -320,7 +320,7 @@ export default async function HospitalLayout({ children, params }: LayoutProps) 
                     subdomain={resolvedParams.subdomain} 
                     hospitalName={chatbotName} 
                     hospitalPhone={emergencyNumber}
-                    whatsAppNumber={businessInfo?.contact_phone}
+                    whatsAppNumber={profile?.allowed_features?.includes('review_system') ? businessInfo?.contact_phone : undefined}
                 />
             )}
         </>

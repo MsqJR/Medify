@@ -110,11 +110,11 @@ export default function ContactBlock({
                 <p className="text-xs font-semibold uppercase tracking-widest opacity-80">
                   24/7 Emergency
                 </p>
-                <p className="text-2xl font-bold leading-tight">{phone}</p>
+                <p className="text-2xl font-bold leading-tight">911</p>
               </div>
             </div>
             <a
-              href={`tel:${phone.replace(/\s/g, '')}`}
+              href="tel:911"
               className="text-sm font-bold px-5 py-2.5 rounded-xl transition-colors whitespace-nowrap hover:opacity-90"
               style={{ background: '#ffffff', color: '#dc2626' }}
             >
