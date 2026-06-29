@@ -54,6 +54,7 @@ Your job:
 - Recommend the most relevant medical specialties.
 - Give general self-care or next-step guidance appropriate for non-emergency use.
 - Escalate to urgent or emergency care when red flags are present.
+- If the user sends a casual greeting (like "hi", "hello") or a non-medical question, politely decline by explaining you are a medical triage assistant in the `answer` field. Leave medical fields empty and set `is_medical_query` to false.
 
 Safety rules:
 - Never claim certainty or provide a definitive diagnosis.
@@ -65,15 +66,16 @@ Safety rules:
 
 Output valid JSON only with this schema:
 {
-  \"answer\": string,
-  \"follow_up_questions\": string[],
-  \"possible_conditions\": string[],
-  \"recommended_specialties\": string[],
-  \"guidance\": string[],
-  \"urgency\": \"self_care\" | \"routine\" | \"urgent\" | \"emergency\",
-  \"seek_emergency_care\": boolean,
-  \"confidence_note\": string,
-  \"disclaimer\": string
+  "answer": string,
+  "follow_up_questions": string[],
+  "possible_conditions": string[],
+  "recommended_specialties": string[],
+  "guidance": string[],
+  "urgency": "self_care" | "routine" | "urgent" | "emergency",
+  "seek_emergency_care": boolean,
+  "confidence_note": string,
+  "disclaimer": string,
+  "is_medical_query": boolean
 }
 """
 
@@ -100,6 +102,7 @@ class ChatbotResponse:
     seek_emergency_care: bool
     confidence_note: str
     disclaimer: str
+    is_medical_query: bool
     raw_model_output: str
 
     def to_dict(self) -> dict:
@@ -113,9 +116,9 @@ class ChatbotResponse:
             'seek_emergency_care': self.seek_emergency_care,
             'confidence_note': self.confidence_note,
             'disclaimer': self.disclaimer,
+            'is_medical_query': self.is_medical_query,
             'raw_model_output': self.raw_model_output,
         }
-
 
 class MedicalChatbotService:
     @classmethod
@@ -135,6 +138,7 @@ class MedicalChatbotService:
         )
         raw_text = cls._call_huggingface(prompt=prompt, ai_settings=ai_settings)
         parsed = cls._parse_json_response(raw_text)
+        is_medical_query = parsed.get('is_medical_query', True)
         urgency = cls._normalize_urgency(parsed.get('urgency'))
         emergency = cls._contains_emergency_language(user_message) or bool(parsed.get('seek_emergency_care'))
         if emergency and urgency != 'emergency':
@@ -142,28 +146,40 @@ class MedicalChatbotService:
 
         possible_conditions = cls._normalize_string_list(parsed.get('possible_conditions'))[:3]
         recommended_specialties = cls._normalize_string_list(parsed.get('recommended_specialties'))[:3]
-        if not recommended_specialties:
+        if is_medical_query and not recommended_specialties:
             recommended_specialties = cls._infer_specialties(user_message)
 
         follow_up_questions = cls._normalize_string_list(parsed.get('follow_up_questions'))[: ai_settings.follow_up_question_limit]
-        if not follow_up_questions and urgency != 'emergency':
+        if is_medical_query and not follow_up_questions and urgency != 'emergency':
             follow_up_questions = cls._default_follow_up_questions(user_message)[: ai_settings.follow_up_question_limit]
 
         guidance = cls._normalize_string_list(parsed.get('guidance'))[:4]
-        if emergency:
+        if not is_medical_query:
+            guidance = []
+        elif emergency:
             guidance = [
                 'Seek emergency medical care now or contact local emergency services.',
                 'Do not rely on the chatbot for urgent symptom management.',
             ]
 
         disclaimer = str(parsed.get('disclaimer') or ai_settings.disclaimer or DEFAULT_MEDICAL_DISCLAIMER).strip()
-        answer = str(parsed.get('answer') or raw_text).strip()
+        answer = str(parsed.get('answer', '')).strip()
+        if not answer:
+            if is_medical_query:
+                answer = raw_text.strip()
+            else:
+                answer = "I am a medical triage assistant and can only help with health-related concerns."
+
         confidence_note = str(
             parsed.get('confidence_note')
             or 'This is an initial triage-style summary based on limited information and may be incomplete.'
         ).strip()
 
-        if disclaimer not in answer:
+        if not is_medical_query:
+            confidence_note = ""
+            disclaimer = ""
+
+        if disclaimer and disclaimer not in answer:
             answer = f'{answer}\n\n{disclaimer}'
 
         return ChatbotResponse(
@@ -176,6 +192,7 @@ class MedicalChatbotService:
             seek_emergency_care=emergency,
             confidence_note=confidence_note,
             disclaimer=disclaimer,
+            is_medical_query=is_medical_query,
             raw_model_output=raw_text,
         )
 
@@ -235,6 +252,7 @@ class MedicalChatbotService:
             seek_emergency_care=emergency,
             confidence_note=note,
             disclaimer=disclaimer,
+            is_medical_query=True,
             raw_model_output='',
         )
 
@@ -516,6 +534,7 @@ class MedicalChatbotService:
             'seek_emergency_care': cls._contains_emergency_language(candidate),
             'confidence_note': 'The model did not return structured JSON, so a safe fallback response was used.',
             'disclaimer': DEFAULT_MEDICAL_DISCLAIMER,
+            'is_medical_query': True,
         }
 
     @classmethod
