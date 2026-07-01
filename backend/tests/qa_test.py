@@ -1,10 +1,13 @@
 import os
-import django
 import sys
+import django
 import requests
 from threading import Thread
 import time
 from datetime import datetime, timedelta
+
+# Add backend directory to Python path to resolve imports
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'medify_backend.settings')
 django.setup()
@@ -30,11 +33,12 @@ def run_tests():
 
     today = datetime.now()
     today_weekday = today.weekday()
+    model_weekday = (today_weekday + 1) % 7
     
     DoctorSchedule.objects.filter(doctor=doctor).delete()
     DoctorSchedule.objects.create(
         doctor=doctor,
-        day_of_week=today_weekday,
+        day_of_week=model_weekday,
         start_time='09:00:00',
         end_time='17:00:00',
         slot_duration_minutes=30

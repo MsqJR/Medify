@@ -355,17 +355,17 @@ describe('HospitalDoctorsPage — Edit Doctor', () => {
 
   it('persists experience — bio is reconstructed from title + experience', async () => {
     await renderAndOpenEdit();
-    const expInput = screen.getByPlaceholderText(/e\.g\. 10 years/i);
-    fireEvent.change(expInput, { target: { value: '15 years' } });
+    const expInput = screen.getByPlaceholderText(/e\.g\. 10/i);
+    fireEvent.change(expInput, { target: { value: '15' } });
     await clickSave(/save changes/i);
 
     await waitFor(() => {
       const payload = mockUpdateDoctor.mock.calls[0][1];
       if (payload instanceof FormData) {
-        expect(payload.get('experience')).toBe('15 years');
+        expect(payload.get('experience')).toBe('15');
       } else {
-        expect(payload.experience).toBe('15 years');
-        expect(payload.bio).toContain('15 years');
+        expect(payload.experience).toBe('15');
+        expect(payload.bio).toContain('15');
       }
     });
   });
