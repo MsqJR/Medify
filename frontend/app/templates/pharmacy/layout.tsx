@@ -49,6 +49,7 @@ function PharmacyTemplatesLayoutContent({ children }: { children: React.ReactNod
   const [themeSettings, setThemeSettings] = useState(() => normalizePharmacyThemeSettings(null))
   const pathname = usePathname()
   const [whatsAppPhone, setWhatsAppPhone] = useState('')
+  const [isAIChatActive, setIsAIChatActive] = useState(false)
 
   const templateId = useMemo(() => {
     const match = pathname?.match(/\/templates\/pharmacy\/(\d+)/)
@@ -56,6 +57,17 @@ function PharmacyTemplatesLayoutContent({ children }: { children: React.ReactNod
   }, [pathname])
 
   const showWhatsApp = templateId === 1 || templateId === 2 || templateId === 4
+
+  useEffect(() => {
+    const handleAIChatState = (e: Event) => {
+      const customEvent = e as CustomEvent<{ active: boolean }>
+      setIsAIChatActive(customEvent?.detail?.active || false)
+    }
+    window.addEventListener('ai-chatbot-state-change', handleAIChatState)
+    return () => {
+      window.removeEventListener('ai-chatbot-state-change', handleAIChatState)
+    }
+  }, [])
 
   useEffect(() => {
     const updatePhone = () => {
@@ -279,7 +291,7 @@ function PharmacyTemplatesLayoutContent({ children }: { children: React.ReactNod
   return (
     <div className="pharmacy-theme-root" style={themeVariables as React.CSSProperties}>
       {children}
-      {showWhatsApp && whatsAppPhone && (
+      {showWhatsApp && whatsAppPhone && !isAIChatActive && (
         <WhatsAppButton phone={whatsAppPhone} />
       )}
     </div>

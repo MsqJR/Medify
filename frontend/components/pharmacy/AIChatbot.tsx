@@ -159,6 +159,29 @@ export const AIChatbot: React.FC<AIChatbotProps> = ({
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const isChatActive = isOpen && !isMinimized
+      window.dispatchEvent(
+        new CustomEvent('ai-chatbot-state-change', {
+          detail: { active: isChatActive },
+        })
+      )
+    }
+  }, [isOpen, isMinimized])
+
+  useEffect(() => {
+    return () => {
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(
+          new CustomEvent('ai-chatbot-state-change', {
+            detail: { active: false },
+          })
+        )
+      }
+    }
+  }, [])
+
   const syncAssistantMessage = (assistantMessageId: string, updater: (current: ChatMessage) => ChatMessage) => {
     setMessages((prev) => prev.map((item) => (item.id === assistantMessageId ? updater(item) : item)))
   }

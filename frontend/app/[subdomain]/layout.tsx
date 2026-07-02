@@ -4,6 +4,7 @@ import HospitalChatWidget from '@/components/hospital/HospitalChatWidget';
 import { getHospitalProfile, getHospitalDepartments } from '@/lib/hospitalApi';
 import { getSubdomainPublicInfo } from '@/lib/subdomainApi';
 import { normalizeLogoUrl } from '@/lib/storage';
+import PharmacySubdomainLayout from './PharmacySubdomainLayout';
 
 interface LayoutProps {
     children: React.ReactNode;
@@ -21,7 +22,11 @@ export default async function HospitalLayout({ children, params }: LayoutProps) 
 
     const subdomainInfo = await subdomainInfoPromise;
     if (subdomainInfo?.business_type === 'pharmacy') {
-        return <>{children}</>;
+        return (
+            <PharmacySubdomainLayout subdomainInfo={subdomainInfo}>
+                {children}
+            </PharmacySubdomainLayout>
+        );
     }
 
     const [profile, departments] = await Promise.all([
