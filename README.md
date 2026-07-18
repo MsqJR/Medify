@@ -1,191 +1,196 @@
 # Medify - Medical Website Builder
 
-A modern, professional SaaS platform for building medical websites for Hospitals and Pharmacies. Built with Next.js 16, TypeScript, and Tailwind CSS.
+A modern, professional SaaS platform for building medical websites for **Hospitals** and **Pharmacies**. Medify combines intuitive website construction tools with patient management portals, e-commerce storefronts, and AI-powered healthcare assistant services.
 
-## Overview
+Built with **Next.js 16** (App Router, Turbopack) on the frontend, and **Django 4.2 / Django REST Framework 3.15** on the backend.
 
-Medify is a full-stack application (Next.js frontend + Django REST API backend) that enables medical facilities to create professional websites through an intuitive interface. The platform offers two distinct workflows:
+---
 
-- **🏥 Hospital Websites** - Feature-based website creation with customizable modules
-- **💊 Pharmacy Websites** - Template-based website creation with pre-designed layouts
-- **🤖 AI Assistant** -  Chatbot for patins and rag model 
+## 🏗️ Project Architecture & Structure
 
-## Project Structure
+Medify is organized as a monorepo containing the following structures:
 
 ```
 .
-├── frontend/            # Next.js 16 application (UI)
-│   ├── app/             # Next.js app directory (App Router)
-│   ├── components/      # Reusable React components
-│   ├── public/          # Static assets
+├── frontend/            # Next.js 16 application (UI / App Router)
+│   ├── app/             # App routing and page templates
+│   │   └── [subdomain]/ # Multi-tenancy website routing path
+│   ├── components/      # Reusable UI & layout React components
 │   └── package.json     # Frontend dependencies & scripts
-└── backend/             # Django REST API
-    ├── medify_backend/  # Django project settings & URLs
-    ├── api/             # Core API app (models, serializers, views)
-    ├── manage.py        # Django management script
-    └── requirements.txt # Backend dependencies
+├── backend/             # Django REST Framework API
+│   ├── medify_backend/  # Main project configuration and URLs
+│   ├── core/            # Authentication, onboarding, business info, & chatbot APIs
+│   ├── hospitals/       # Hospital website data, doctor profiles, & bookings
+│   ├── pharmacies/      # Pharmacy templates, e-commerce, & CSV inventory uploads
+│   ├── rag_model/       # Standalone pharmacy RAG assistant API
+│   └── requirements.txt # Python package dependencies
+├── specs/               # Historical and technical specifications
+├── DESIGN.md            # Platform design system tokens and visual guidelines
+├── PRODUCT.md           # Product positioning, purpose, and target audiences
+└── TESTING.md           # Backend and end-to-end testing suite instructions
 ```
 
-## Features
+### 🌐 Multi-Tenancy & Subdomain Routing
 
-- **Landing Page** - Marketing page with features, pricing, and testimonials
-- **User Authentication** - Signup, login, logout, forgot password, password reset, and account deletion
-- **Dashboard** - Comprehensive dashboard with setup progress tracking
-- **Hospital Setup** - Feature selection and configuration for hospitals
-- **Pharmacy Setup** - Purchase, activation, cancellation, and customization for pharmacy templates
-- **Business Info Forms** - Collect and manage business information
-- **AI Assistant** - Chat interface for website management assistance
-- **Settings** - Account and website configuration
-- **Payment Integration** - Payment modal for Visa and Fawry (UI ready)
-- **Responsive Design** - Mobile-first design that works on all devices
+Medify supports dynamic subdomain matching for published medical websites:
+- **Frontend**: A custom `middleware.ts` intercepts requests and rewrites `*.localhost:3000` to the internal path `/app/[subdomain]/`.
+- **Backend**: CORS settings and security hosts validate and allow requests originating from wildcards like `*.localhost:3000`.
 
-## Tech Stack
+---
 
-- **Frontend Framework**: Next.js 16 (App Router)
-- **Frontend Language**: TypeScript 5.5+
-- **Styling**: Tailwind CSS
-- **Icons**: React Icons
-- **Frontend Architecture**: Component-based, reusable UI components
-- **Backend Framework**: Django 4 + Django REST Framework
-- **Backend Language**: Python 3.10+
-- **Database**: SQLite (default) or PostgreSQL
-- **Authentication**: JWT (via `rest_framework_simplejwt`)
-
-## Getting Started
+## 🚀 Getting Started
 
 ### Prerequisites
 
-- Node.js 20.9.0 or later
-- Python 3.10 or later
-- npm or yarn
-- (Optional) PostgreSQL 14+ if you don't want to use the default SQLite database
+Ensure you have the following installed on your local machine:
+- **Node.js** (v20.9.0 or later)
+- **Python** (v3.10 or later)
+- **Docker & Docker Compose** (Optional, for quick containerized spin-up)
 
-### 1. Backend (Django API)
+---
 
-```bash
-cd backend
+### Method A: Local Development Setup
 
-# (first time) create & activate virtualenv
-# from backend/ (venv active or not)
-deactivate  # if the venv is active
+To run both frontend and backend locally for development:
 
-Remove-Item -Recurse -Force venv
+#### 1. Backend (Django API) Setup
 
-# create venv with a supported Python (pick one you have installed)
-py -3.11 -m venv venv
-# or: py -3.10 -m venv venv
+1. Navigate to the backend folder:
+   ```bash
+   cd backend
+   ```
 
-venv\Scripts\Activate.ps1
+2. Create and activate a Python virtual environment:
+   - **Linux / macOS**:
+     ```bash
+     python3 -m venv venv
+     source venv/bin/activate
+     ```
+   - **Windows (Command Prompt)**:
+     ```cmd
+     python -m venv venv
+     venv\Scripts\activate.bat
+     ```
+   - **Windows (PowerShell)**:
+     ```powershell
+     python -m venv venv
+     venv\Scripts\Activate.ps1
+     ```
 
-# source venv/bin/activate      # Mac/Linux
+3. Install requirements and upgrade package installer:
+   ```bash
+   pip install --upgrade pip
+   pip install -r requirements.txt
+   ```
 
-# install dependencies
-python -m pip install --upgrade pip
-pip install -r requirements.txt
+4. Create configuration file from environment variables template:
+   - **Linux / macOS**: `cp .env.example .env`
+   - **Windows**: `copy .env.example .env`
 
-# copy environment template and adjust if needed
-copy .env.example .env          # Windows
-# cp .env.example .env          # Mac/Linux
+5. Initialize the database and run migrations:
+   ```bash
+   python manage.py migrate
+   ```
 
-# apply migrations
-python manage.py migrate
+6. Start the local server:
+   ```bash
+   python manage.py runserver
+   ```
+   The backend API will run at `http://localhost:8000/api/`.
 
-# run server
-python manage.py runserver
-```
+#### 2. Frontend (Next.js App) Setup
 
-The backend API will be available at `http://localhost:8000/api/`.
+1. Navigate to the frontend folder:
+   ```bash
+   cd frontend
+   ```
 
-### 2. Frontend (Next.js app)
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
 
-```bash
-cd frontend
-npm install
-npm run dev
-```
+3. Run the development server with Turbopack:
+   ```bash
+   npm run dev
+   ```
+   The platform dashboard and builder will be accessible at `http://localhost:3000`.
 
-The frontend will be available at `http://localhost:3000`.
+---
 
-### 3. Environment Variables
+### Method B: Docker Compose Setup
 
-- **Backend**: Configure `backend/.env` (see `.env.example`) for `SECRET_KEY`, `DEBUG`, database settings (`DB_ENGINE`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `DB_HOST`, `DB_PORT`), and `FRONTEND_URL`.
-- **Frontend**: Set the API base URL via Next.js env vars (for example: `NEXT_PUBLIC_API_URL=http://localhost:8000/api`).
+To launch the entire stack—including a production-ready PostgreSQL database—using Docker:
 
-## Authentication Flows (Implemented)
+1. Create a configured `.env` file in the `backend/` folder based on `.env.example`.
+2. From the root directory, build and run the services:
+   ```bash
+   docker-compose up --build
+   ```
+3. Once running:
+   - **Frontend UI**: Accessible at `http://localhost:3000`
+   - **Backend REST API**: Accessible at `http://localhost:8000/api/`
+   - **PostgreSQL Database**: Port `5432` inside container networks
 
-The authentication system now includes full account lifecycle flows in both backend and frontend.
+---
 
-- `POST /api/auth/logout/`
-    - Revokes refresh tokens via JWT blacklist.
-    - Payload supports:
-        - `refresh` (single-session logout)
-        - `all_devices` (logout from all sessions)
-- `POST /api/auth/delete-account/`
-    - Requires authenticated user plus explicit confirmation:
-        - account email
-        - current password
-        - `confirmation_text: "DELETE"`
-    - Permanently removes the account and related data.
-- `POST /api/auth/forgot-password/`
-    - Sends password reset email with secure Django token.
-    - Uses non-enumerating response text for security.
-- `POST /api/auth/password-reset/validate/`
-    - Validates `uid` and `token` before showing reset form.
-- `POST /api/auth/password-reset/confirm/`
-    - Sets new password after token validation.
-    - Revokes existing refresh tokens for the user.
+## ⚙️ Environment Variables
 
-### Backend Auth Environment Variables
+### Backend (`backend/.env`)
 
-Add these to `backend/.env` for production-ready password reset email flow:
+Configure these values for local features or production integrations:
 
-- `DEFAULT_FROM_EMAIL`
-- `EMAIL_BACKEND`
-- `EMAIL_HOST`
-- `EMAIL_PORT`
-- `EMAIL_HOST_USER`
-- `EMAIL_HOST_PASSWORD`
-- `EMAIL_USE_TLS`
-- `EMAIL_USE_SSL`
-- `FRONTEND_PASSWORD_RESET_PATH` (default: `/reset-password`)
-- `PASSWORD_RESET_TIMEOUT` (seconds; default: `3600`)
+| Variable | Default / Example | Purpose |
+| --- | --- | --- |
+| `SECRET_KEY` | `django-insecure-...` | Django security salt key |
+| `DEBUG` | `True` | Toggle debug verbose mode |
+| `DB_ENGINE` | `sqlite` or `postgresql` | Select backend database engine |
+| `FRONTEND_URL` | `http://localhost:3000` | CORS trusted origin root URL |
+| `HF_MEDICAL_MODEL_ID` | `microsoft/Phi-3-mini-4k-instruct` | Main model for General Chatbot |
+| `HUGGINGFACE_API_TOKEN` | `hf_your_real_token...` | Token to connect to Hugging Face serverless API |
+| `GEMINI_API_KEY` | `your_gemini_key...` | API key to run Gemini embed & ask for RAG |
+| `GOOGLE_SERVICE_ACCOUNT_FILE` | (Path to file) | JSON path for Google Sheets sync service account |
+| `GOOGLE_SERVICE_ACCOUNT_JSON` | (Raw JSON string) | Alternate inline Google service account credentials |
 
-Notes:
+*Note: For password reset email features, add standard Django `EMAIL_*` variables (e.g. `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD`) to enable verification code triggers.*
 
-- Ensure migrations are applied (`python manage.py migrate`) so `token_blacklist` tables exist.
-- Frontend reset pages are available at `/forgot-password` and `/reset-password`.
+### Frontend (`frontend/.env`)
 
-## Project Status
+| Variable | Default / Example | Purpose |
+| --- | --- | --- |
+| `NEXT_PUBLIC_API_URL` | `http://localhost:8000/api` | Target Django REST endpoint URL |
+| `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` | `(Optional Key)` | Enables interactive map locations |
 
-- **Frontend**: Integrated with backend APIs for auth, pharmacy profile, product catalog, and template purchase lifecycle.
-- **Backend**: Django REST API implemented for authentication, website setup, business info, pharmacy products, and template purchase/cancel persistence.
-- **Persistence**: SQLite is used by default for local development; PostgreSQL configuration is available for production (see backend docs).
+---
 
-## Pharmacy Template Workflow
+## 🌟 Key Workflows & Features
 
-- Pharmacy templates are available under `/templates/pharmacy/1` through `/templates/pharmacy/6`.
-- Template purchases are persisted in backend records and surfaced in `/dashboard/pharmacy/templates`.
-- Activation requires an active purchase.
-- Cancellation marks purchase history as cancelled and clears active selection when applicable.
-- Preview/publish flows use backend state with local/public mirrors to keep owner and visitor pages in sync.
+- **🏥 Hospital Builder** - Form-based modules allow administrators to pick active features, configure department timings, list doctor profiles, and manage patient booking slots.
+- **💊 Pharmacy Builder** - Interactive store generator. Includes template selection, sandbox purchase triggers, activation, cancellation workflows, and public subdomain storefronts.
+- **📦 CSV Catalog Upload** - Pharmacy owners can upload entire product inventories via CSV, processed with formatting reports and error feedback, then synced bidirectionally to Google Sheets.
+- **🤖 Intelligent Chatbots** - Dual AI capabilities:
+  1. `/api/chatbot/`: General assistant powered by Hugging Face API to guide patients and administrators.
+  2. `/api/rag/ask/`: Retrieval-Augmented Generation context engine using Gemini, query vector embeddings, and an internal fallback numpy flat index matching system.
+- **🔐 Secure Auth Flows** - Advanced auth features including signup, login, JWT token blacklist rotation (revocation on single or all devices), password-reset email tokens, and account deletion with credential re-authentication.
 
-## Documentation
+---
 
-For detailed documentation about the frontend application, including:
-- Complete feature list
-- Component documentation
-- Page structure
-- Color palette
-- Development guidelines
+## 🧪 Running Tests
 
-See [frontend/README.md](./frontend/README.md).
+To verify code correctness:
 
-For backend API setup, endpoints, and PostgreSQL configuration, see:
-- [backend/README.md](./backend/README.md)
-- [backend/POSTGRESQL_SETUP.md](./backend/POSTGRESQL_SETUP.md)
+- **Backend Unit Tests**: Run `python manage.py test` inside `backend/` directory.
+- **Frontend Jest Tests**: Run `npm test` inside `frontend/` directory.
+- **E2E Concurrency Tests**: Run `python hospitals/tests/test_qa_e2e.py` with a live local backend running.
 
-## License
+For detailed testing documentation, see [TESTING.md](./TESTING.md).
 
-This project is part of a full-stack development task.
+---
 
-Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
+## 📖 Linked Documentation
+
+- [DESIGN.md](./DESIGN.md) — Comprehensive visual style guide, type settings, and design principles.
+- [PRODUCT.md](./PRODUCT.md) — Platform positioning, target audiences, and brand guidelines.
+- [TESTING.md](./TESTING.md) — Test suite layout, coverage details, and best practices.
+- [frontend/README.md](./frontend/README.md) — Frontend specific components and layouts guide.
+- [AGENTS.md](./AGENTS.md) — Monorepo quick commands and architectural checklist.
