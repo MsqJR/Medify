@@ -10,6 +10,7 @@ import { FiSend, FiMessageSquare, FiLock, FiDollarSign } from 'react-icons/fi'
 import { getScopedItem } from '@/lib/storage'
 import { chatbotApi } from '@/lib/api'
 import { pharmacyApi } from '@/lib/pharmacy'
+import { DashboardPageWrapper, PageHeader } from '@/components/dashboard'
 
 const CATEGORY_KEYWORDS: Array<{ category: string; keywords: string[] }> = [
   { category: 'Pain Relief', keywords: ['ibuprofen', 'paracetamol', 'acetaminophen', 'pain', 'headache'] },
@@ -199,15 +200,11 @@ export default function AIAssistantPage() {
   }
 
   return (
-    <div className="space-y-6 w-full max-w-full overflow-x-hidden">
-      <div>
-        <h1 className="text-3xl font-bold text-neutral-dark mb-2">
-          AI Assistant for {userType === 'hospital' ? 'Patients' : 'Customers'}
-        </h1>
-        <p className="text-neutral-gray">
-          Configure the AI chatbot that helps {userType === 'hospital' ? 'patients' : 'customers'} on your website
-        </p>
-      </div>
+    <DashboardPageWrapper>
+      <PageHeader
+        title={`AI Assistant for ${userType === 'hospital' ? 'Patients' : 'Customers'}`}
+        description={`Configure the AI chatbot that helps ${userType === 'hospital' ? 'patients' : 'customers'} on your website`}
+      />
 
       {!hasAIChatbot ? (
         <Card className="p-8 text-center">
@@ -440,7 +437,7 @@ export default function AIAssistantPage() {
           </Card>
         </div>
       )}
-    </div>
+    </DashboardPageWrapper>
   )
 }
 

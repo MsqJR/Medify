@@ -8,7 +8,17 @@ import { AIChatbot } from '@/components/pharmacy/AIChatbot'
 import { BrandLogo } from '@/components/pharmacy/BrandLogo'
 import { useSearchParams } from 'next/navigation'
 import { ProductImage } from '@/components/pharmacy/ProductImage'
-import { getSiteItem, setSiteItem, removeSiteItem, setSiteOwnerId } from '@/lib/storage'
+import { getSiteItem, setSiteItem, removeSiteItem } from '@/lib/storage'
+import {
+  safeJsonParse,
+  buildTemplatePath,
+  syncSiteOwner,
+  loadBrandInfo,
+  readCart,
+  writeCart,
+  type TemplateBrand,
+  type TemplateProduct,
+} from '@/lib/pharmacyTemplateRuntime'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api'
 
@@ -43,13 +53,13 @@ type BusinessInfo = {
 
 type SortOption = 'featured' | 'name_asc' | 'price_low' | 'price_high' | 'stock_high'
 
-function safeJsonParse<T>(value: string | null): T | null {
-  if (!value) return null
-  try {
-    return JSON.parse(value) as T
-  } catch {
-    return null
-  }
+const DEMO_BRAND: TemplateBrand = {
+  name: 'Modern Pharmacy',
+  logo: '/mod logo.png',
+  about: '',
+  phone: '+1 (555) 123-4567',
+  address: '123 Main Street, City',
+  openHours: '',
 }
 
 const defaultMedications: Product[] = [
@@ -83,15 +93,8 @@ function MedicationsPageContent() {
   const ownerId = searchParams?.get('owner') || ''
   const queryCategory = searchParams?.get('category') || ''
   const cartKey = isDemo ? 'pharmacy_cart_demo' : 'pharmacy_cart'
-  const withDemo = (path: string) => {
-    const [base, hash] = path.split('#')
-    const [pathname, query = ''] = base.split('?')
-    const params = new URLSearchParams(query)
-    if (isDemo) params.set('demo', '1')
-    if (ownerId) params.set('owner', ownerId)
-    const nextQuery = params.toString()
-    return `${pathname}${nextQuery ? `?${nextQuery}` : ''}${hash ? `#${hash}` : ''}`
-  }
+  const withDemo = (path: string) => buildTemplatePath(path, { isDemo, ownerId })
+  const demoState = { isDemo, ownerId }
   
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState<string>('All')
@@ -101,9 +104,7 @@ function MedicationsPageContent() {
   const [pharmacyProducts, setPharmacyProducts] = useState<Product[]>([])
 
   useEffect(() => {
-    if (ownerId) {
-      setSiteOwnerId(ownerId)
-    }
+    syncSiteOwner(ownerId)
   }, [ownerId])
 
   useEffect(() => {
@@ -202,19 +203,11 @@ function MedicationsPageContent() {
   }, [isDemo])
 
   useEffect(() => {
-    const raw = isDemo ? localStorage.getItem(cartKey) : getSiteItem(cartKey)
-    const savedCart = safeJsonParse<CartItem[]>(raw)
-    if (savedCart) setCart(savedCart)
+    setCart(readCart(cartKey, isDemo))
   }, [cartKey, isDemo])
 
   useEffect(() => {
-    if (cart.length > 0) {
-      if (isDemo) localStorage.setItem(cartKey, JSON.stringify(cart))
-      else setSiteItem(cartKey, JSON.stringify(cart))
-    } else {
-      if (isDemo) localStorage.removeItem(cartKey)
-      else removeSiteItem(cartKey)
-    }
+    writeCart(cartKey, isDemo, cart)
   }, [cart, cartKey, isDemo])
 
   const allProducts = useMemo(() => {
@@ -361,36 +354,10 @@ function MedicationsPageContent() {
     return allProducts.filter((p) => (p.stock !== undefined ? p.stock > 0 : p.inStock !== false)).length
   }, [allProducts])
 
-  const [brand, setBrand] = useState<{
-    name: string
-    logo: string | null
-    phone: string
-    address: string
-  }>({
-    name: '',
-    logo: null,
-    phone: '',
-    address: '',
-  })
+  const [brand, setBrand] = useState<TemplateBrand>(DEMO_BRAND)
 
   useEffect(() => {
-    if (isDemo) {
-      setBrand({
-        name: 'Modern Pharmacy',
-        logo: '/mod logo.png',
-        phone: '+1 (555) 123-4567',
-        address: '123 Main Street, City',
-      })
-    } else {
-      const businessInfo = safeJsonParse<BusinessInfo>(getSiteItem('businessInfo'))
-      const setup = safeJsonParse<PharmacySetup>(getSiteItem('pharmacySetup'))
-      setBrand({
-        name: businessInfo?.name?.trim() || '',
-        logo: businessInfo?.logo || null,
-        phone: businessInfo?.contactPhone || setup?.phone || '',
-        address: businessInfo?.address || setup?.address || '',
-      })
-    }
+    setBrand(loadBrandInfo(isDemo, DEMO_BRAND))
   }, [isDemo])
 
   return (
@@ -426,16 +393,16 @@ function MedicationsPageContent() {
       <header className="sticky top-0 z-30 bg-white/90 backdrop-blur border-b border-neutral-border">
         <div className="mx-auto max-w-7xl px-4 py-4 flex items-center justify-between gap-3">
           <Link href={withDemo("/templates/pharmacy/1")} className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-primary-light flex items-center justify-center overflow-hidden">
+            <div className="w-10 h-10 rounded-xl bg-primary-light flex items-center justify-center overflow-hidden p-0.5">
               {isDemo ? (
-                <Image src="/mod logo.png" alt="Logo" width={40} height={40} className="object-cover" />
+                <Image src="/mod logo.png" alt="Logo" width={36} height={36} className="object-contain" />
               ) : (
                 <BrandLogo
                   src={brand.logo}
                   alt={`${brand.name || 'Pharmacy'} logo`}
                   fallbackText={brand.name || 'P'}
-                  imageClassName="w-full h-full object-cover"
-                  fallbackClassName="w-full h-full bg-primary flex items-center justify-center text-white font-bold text-xs"
+                  imageClassName="w-full h-full object-contain"
+                  fallbackClassName="w-full h-full bg-primary flex items-center justify-center text-white font-bold text-xs rounded-lg"
                 />
               )}
             </div>
@@ -693,7 +660,7 @@ function MedicationsPageContent() {
 
       <footer className="border-t border-neutral-border mt-16 bg-gradient-to-b from-white to-neutral-light/30">
         <div className="mx-auto max-w-7xl px-4 py-8 text-sm text-neutral-gray flex flex-col sm:flex-row gap-2 sm:items-center sm:justify-between">
-          <div>© {new Date().getFullYear()} {brand.name || (isDemo ? 'Modern Pharmacy' : 'Pharmacy')}. All rights reserved.</div>
+          <div>&copy; {new Date().getFullYear()} {brand.name || (isDemo ? 'Modern Pharmacy' : 'Pharmacy')}. All rights reserved.</div>
           <div className="opacity-80">This website done by Medify</div>
         </div>
       </footer>

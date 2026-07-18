@@ -27,6 +27,7 @@ import {
   writeCart,
 } from '@/lib/pharmacyTemplateRuntime'
 import { ProductImage } from '@/components/pharmacy/ProductImage'
+import { BrandLogo } from '@/components/pharmacy/BrandLogo'
 import {
   getTemplate6StockLabel,
   getTemplate6StockPillClasses,

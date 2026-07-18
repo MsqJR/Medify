@@ -6,6 +6,8 @@ from .user_serializers import (
     ForgotPasswordSerializer,
     PasswordResetTokenValidationSerializer,
     PasswordResetConfirmSerializer,
+    GoogleLoginSerializer,
+    OnboardingSerializer,
 )
 from .business_serializers import BusinessInfoSerializer, BusinessInfoCreateUpdateSerializer
 from .website_serializers import WebsiteSetupSerializer
@@ -24,6 +26,8 @@ __all__ = [
     'ForgotPasswordSerializer',
     'PasswordResetTokenValidationSerializer',
     'PasswordResetConfirmSerializer',
+    'GoogleLoginSerializer',
+    'OnboardingSerializer',
     'BusinessInfoSerializer',
     'BusinessInfoCreateUpdateSerializer',
     'WebsiteSetupSerializer',

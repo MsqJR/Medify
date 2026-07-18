@@ -94,22 +94,22 @@ const mapLocalOrder = (order: LocalOrder): DashboardOrder => ({
 const STATUS_CONFIG = {
   pending: {
     label: 'Pending',
-    bg: 'bg-amber-50 text-amber-700 border border-amber-200',
+    bg: 'bg-warning-light text-warning border border-warning-border',
     icon: <FiClock size={12} />,
   },
   processing: {
     label: 'Processing',
-    bg: 'bg-blue-50 text-blue-700 border border-blue-200',
+    bg: 'bg-primary-light text-primary border border-primary-light',
     icon: <FiPackage size={12} />,
   },
   completed: {
     label: 'Completed',
-    bg: 'bg-green-50 text-green-700 border border-green-200',
+    bg: 'bg-success-light text-success border border-success-border',
     icon: <FiCheckCircle size={12} />,
   },
   cancelled: {
     label: 'Cancelled',
-    bg: 'bg-red-50 text-red-600 border border-red-200',
+    bg: 'bg-error-light text-error border border-error-border',
     icon: <FiXCircle size={12} />,
   },
 }
@@ -293,7 +293,7 @@ function OrderCard({
             <>
               <button
                 onClick={() => onUpdateStatus(order, 'completed')}
-                className="text-xs font-medium px-3 py-1.5 rounded-lg bg-green-500 text-white hover:bg-green-600 transition-colors"
+                className="text-xs font-medium px-3 py-1.5 rounded-lg bg-success text-white hover:brightness-90 transition-colors"
               >
                 Mark Completed
               </button>
@@ -309,7 +309,7 @@ function OrderCard({
             <button
               onClick={() => void handleDelete()}
               disabled={deleting}
-              className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 transition-colors disabled:opacity-60"
+              className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg bg-error-light text-error border border-error-border hover:brightness-95 transition-colors disabled:opacity-60"
             >
               <FiTrash2 size={12} />
               {deleting ? 'Deleting…' : 'Delete Order'}

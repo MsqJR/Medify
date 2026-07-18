@@ -8,7 +8,17 @@ import { FiClock, FiMapPin, FiPhoneCall, FiPlus, FiMinus, FiSearch, FiShoppingCa
 import { AIChatbot } from '@/components/pharmacy/AIChatbot'
 import { BrandLogo } from '@/components/pharmacy/BrandLogo'
 import { ProductImage } from '@/components/pharmacy/ProductImage'
-import { getSiteItem, setSiteItem, removeSiteItem, setSiteOwnerId } from '@/lib/storage'
+import { getSiteItem, setSiteItem, removeSiteItem } from '@/lib/storage'
+import {
+  safeJsonParse,
+  buildTemplatePath,
+  syncSiteOwner,
+  loadBrandInfo,
+  readCart,
+  writeCart,
+  type TemplateBrand,
+  type TemplateProduct,
+} from '@/lib/pharmacyTemplateRuntime'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api'
 
@@ -38,13 +48,13 @@ type BusinessInfo = {
   address?: string
 }
 
-function safeJsonParse<T>(value: string | null): T | null {
-  if (!value) return null
-  try {
-    return JSON.parse(value) as T
-  } catch {
-    return null
-  }
+const DEMO_BRAND: TemplateBrand = {
+  name: 'Classic Pharmacy',
+  logo: '/mod logo.png',
+  about: '',
+  phone: '+1 (555) 234-5678',
+  address: '45 Health Avenue, City',
+  openHours: '',
 }
 
 const demoProducts: Product[] = [
@@ -60,16 +70,8 @@ function Template2MedicationsContent() {
   const isDemo = searchParams?.get('demo') === '1' || searchParams?.get('demo') === 'true'
   const ownerId = searchParams?.get('owner') || ''
   const cartKey = isDemo ? 'pharmacy2_cart_demo' : 'pharmacy2_cart'
-
-  const withDemo = (path: string) => {
-    const [base, hash] = path.split('#')
-    const [pathname, query = ''] = base.split('?')
-    const params = new URLSearchParams(query)
-    if (isDemo) params.set('demo', '1')
-    if (ownerId) params.set('owner', ownerId)
-    const nextQuery = params.toString()
-    return `${pathname}${nextQuery ? `?${nextQuery}` : ''}${hash ? `#${hash}` : ''}`
-  }
+  const withDemo = (path: string) => buildTemplatePath(path, { isDemo, ownerId })
+  const demoState = { isDemo, ownerId }
 
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('All')
@@ -77,20 +79,17 @@ function Template2MedicationsContent() {
   const [pharmacyProducts, setPharmacyProducts] = useState<Product[]>([])
 
   useEffect(() => {
-    if (ownerId) {
-      setSiteOwnerId(ownerId)
-    }
+    syncSiteOwner(ownerId)
   }, [ownerId])
 
   useEffect(() => {
     if (isDemo) return
 
-    // Load from backend API when owner is logged in
     const fetchProducts = async () => {
       let loadedFromBackend = false
       
       try {
-        const token = localStorage.getItem('access_token')   // Fixed: use access_token
+        const token = localStorage.getItem('access_token')
         if (token) {
           const response = await fetch(`${API_URL}/pharmacy/products/`, {
             headers: { 'Authorization': `Bearer ${token}` },
@@ -103,7 +102,6 @@ function Template2MedicationsContent() {
               : Array.isArray((data as any)?.results)
                 ? (data as any).results
                 : []
-            // Only use backend data if we have products
             if (dataList.length > 0) {
               const apiProducts: Product[] = dataList.map((p: any, idx: number) => ({
                 id: p.id?.toString() || `api-${idx}`,
@@ -124,7 +122,6 @@ function Template2MedicationsContent() {
         console.warn('Failed to load products from API:', err)
       }
 
-      // If backend didn't provide products, load from localStorage
       if (!loadedFromBackend) {
         console.log('Loading products from localStorage...')
         const setup = safeJsonParse<PharmacySetup>(getSiteItem('pharmacySetup'))
@@ -154,19 +151,11 @@ function Template2MedicationsContent() {
   }, [isDemo])
 
   useEffect(() => {
-    const raw = isDemo ? localStorage.getItem(cartKey) : getSiteItem(cartKey)
-    const saved = safeJsonParse<CartItem[]>(raw)
-    setCart(saved || [])
+    setCart(readCart(cartKey, isDemo))
   }, [cartKey, isDemo])
 
   useEffect(() => {
-    if (cart.length > 0) {
-      if (isDemo) localStorage.setItem(cartKey, JSON.stringify(cart))
-      else setSiteItem(cartKey, JSON.stringify(cart))
-    } else {
-      if (isDemo) localStorage.removeItem(cartKey)
-      else removeSiteItem(cartKey)
-    }
+    writeCart(cartKey, isDemo, cart)
   }, [cart, cartKey, isDemo])
 
   const allProducts = useMemo(() => (isDemo ? demoProducts : pharmacyProducts), [isDemo, pharmacyProducts])
@@ -226,36 +215,10 @@ function Template2MedicationsContent() {
     })
   }
 
-  const [brand, setBrand] = useState<{
-    name: string
-    logo: string | null
-    phone: string
-    address: string
-  }>({
-    name: '',
-    logo: null,
-    phone: '',
-    address: '',
-  })
+  const [brand, setBrand] = useState<TemplateBrand>(DEMO_BRAND)
 
   useEffect(() => {
-    if (isDemo) {
-      setBrand({
-        name: 'Classic Pharmacy',
-        logo: '/mod logo.png',
-        phone: '+1 (555) 234-5678',
-        address: '45 Health Avenue, City',
-      })
-    } else {
-      const businessInfo = safeJsonParse<BusinessInfo>(getSiteItem('businessInfo'))
-      const setup = safeJsonParse<PharmacySetup>(getSiteItem('pharmacySetup'))
-      setBrand({
-        name: businessInfo?.name?.trim() || '',
-        logo: businessInfo?.logo || null,
-        phone: businessInfo?.contactPhone || setup?.phone || '',
-        address: businessInfo?.address || setup?.address || '',
-      })
-    }
+    setBrand(loadBrandInfo(isDemo, DEMO_BRAND))
   }, [isDemo])
 
   return (
@@ -292,16 +255,16 @@ function Template2MedicationsContent() {
         <header className="sticky top-0 z-30 bg-white/80 backdrop-blur border-b border-neutral-border">
           <div className="mx-auto max-w-7xl px-4 py-4 flex items-center justify-between gap-3">
             <Link href={withDemo('/templates/pharmacy/2')} className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center overflow-hidden border border-amber-300 shadow-sm">
+              <div className="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center overflow-hidden border border-amber-300 shadow-sm p-0.5">
                 {isDemo ? (
-                  <Image src="/mod logo.png" alt="Logo" width={40} height={40} className="object-cover" />
+                  <Image src="/mod logo.png" alt="Logo" width={36} height={36} className="object-contain" />
                 ) : (
                   <BrandLogo
                     src={brand.logo}
                     alt={`${brand.name || 'Pharmacy'} logo`}
                     fallbackText={brand.name || 'P'}
-                    imageClassName="w-full h-full object-cover"
-                    fallbackClassName="w-full h-full bg-[#7a5c2e] flex items-center justify-center text-white font-bold text-xs"
+                    imageClassName="w-full h-full object-contain"
+                    fallbackClassName="w-full h-full bg-[#7a5c2e] flex items-center justify-center text-white font-bold text-xs rounded-lg"
                   />
                 )}
               </div>
@@ -480,7 +443,7 @@ function Template2MedicationsContent() {
 
       <footer className="border-t border-neutral-border mt-16 bg-white/70">
         <div className="mx-auto max-w-7xl px-4 py-8 text-sm text-neutral-gray flex flex-col sm:flex-row gap-2 sm:items-center sm:justify-between">
-          <div>© {new Date().getFullYear()} {brand.name || (isDemo ? 'Classic Pharmacy' : 'Pharmacy')}. All rights reserved.</div>
+          <div>&copy; {new Date().getFullYear()} {brand.name || (isDemo ? 'Classic Pharmacy' : 'Pharmacy')}. All rights reserved.</div>
           <div className="opacity-80">This website done by Medify</div>
         </div>
       </footer>

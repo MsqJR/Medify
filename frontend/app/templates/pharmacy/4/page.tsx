@@ -17,6 +17,7 @@ import {
 import { AIChatbot } from '@/components/pharmacy/AIChatbot'
 
 import { ProductImage } from '@/components/pharmacy/ProductImage'
+import { BrandLogo } from '@/components/pharmacy/BrandLogo'
 import {
   buildTemplatePath,
   calculateSubtotal,
@@ -176,15 +177,25 @@ function TemplateFourHomeContent() {
   return (
     <div className="min-h-screen overflow-x-hidden bg-[radial-gradient(circle_at_top,_#e9fff8_0%,_#f7fbff_46%,_#ffffff_100%)] text-slate-900">
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute left-[-120px] top-[120px] h-72 w-72 rounded-full bg-primary/15 blur-3xl animate-gentle-float" />
-        <div className="absolute right-[-80px] top-[220px] h-64 w-64 rounded-full bg-cyan-300/20 blur-3xl animate-gentle-float [animation-delay:300ms]" />
+        <div className="absolute left-[-120px] top-[120px] h-72 w-72 rounded-full bg-primary/15 blur-3xl" />
+        <div className="absolute right-[-80px] top-[220px] h-64 w-64 rounded-full bg-cyan-300/20 blur-3xl" />
       </div>
 
       <header className="sticky top-0 z-40 border-b border-white/60 bg-white/75 backdrop-blur-xl">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6">
           <Link href={withDemo('/templates/pharmacy/4')} className="flex items-center gap-3">
-            <div className="grid h-11 w-11 place-items-center rounded-2xl bg-gradient-to-br from-primary to-cyan-500 text-white shadow-lg shadow-primary/25">
-              <FiSun />
+            <div className="relative h-11 w-11 flex-shrink-0 overflow-hidden rounded-2xl bg-gradient-to-br from-primary to-cyan-500 text-white shadow-lg shadow-primary/25 flex items-center justify-center p-1">
+              {!demoState.isDemo && brand.logo ? (
+                <BrandLogo
+                  src={brand.logo}
+                  alt={`${brand.name || 'Pharmacy'} logo`}
+                  fallbackText={brand.name || 'P'}
+                  imageClassName="h-full w-full object-contain"
+                  fallbackClassName="h-full w-full bg-primary flex items-center justify-center text-white font-bold rounded-xl"
+                />
+              ) : (
+                <FiSun className="w-5 h-5" />
+              )}
             </div>
             <div>
               <p className="text-sm font-semibold tracking-wide text-slate-900">{brand.name || 'AuroraCare Pharmacy'}</p>
@@ -385,7 +396,7 @@ function TemplateFourHomeContent() {
 
       <footer className="border-t border-slate-200 bg-white/70">
         <div className="mx-auto flex max-w-7xl flex-col gap-2 px-4 py-6 text-sm text-slate-500 sm:flex-row sm:items-center sm:justify-between sm:px-6">
-          <p>© {new Date().getFullYear()} {brand.name || 'AuroraCare Pharmacy'}. Crafted for modern pharmacy commerce.</p>
+          <p>&copy; {new Date().getFullYear()} {brand.name || 'AuroraCare Pharmacy'}. Crafted for modern pharmacy commerce.</p>
           <p>This website done by Medify</p>
         </div>
       </footer>

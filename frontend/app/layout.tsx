@@ -6,15 +6,16 @@ export const metadata: Metadata = {
   title: 'Medify - Build Your Medical Website in Minutes',
   description: 'Medical website builder for Hospitals, Clinics, and Pharmacies',
   icons: {
-    icon: '/mod logo.png',
-    apple: '/mod logo.png',
-    shortcut: '/mod logo.png',
+    icon: '/logo.svg',
+    apple: '/logo.svg',
+    shortcut: '/logo.svg',
   },
 }
 
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
+  viewportFit: 'cover',
 }
 
 export default function RootLayout({

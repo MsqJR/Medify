@@ -1,50 +1,72 @@
 import os
-import shutil
+import json
 import tempfile
-from django.test import SimpleTestCase
+from django.test import SimpleTestCase, override_settings
 from unittest.mock import patch
-from rag_model.vector_store import VectorStore
+from rag_model.services.vector_store import VectorStoreSingleton
 
 
-class VectorStoreTests(SimpleTestCase):
+@override_settings(RAG_EMBEDDING_DIMENSION=3)
+class VectorStoreSingletonTests(SimpleTestCase):
     def setUp(self):
-        # Create a temporary directory for vector index files
-        self.test_dir = tempfile.mkdtemp()
+        VectorStoreSingleton.reset()
+        self.temp_dir = tempfile.mkdtemp()
 
     def tearDown(self):
-        # Clean up the directory after tests
-        shutil.rmtree(self.test_dir)
+        VectorStoreSingleton.reset()
 
-    def test_numpy_fallback_search(self):
-        # Mock _HAS_FAISS to False to force raw NumPy matrix search logic
-        with patch('rag_model.vector_store._HAS_FAISS', False):
-            store = VectorStore(index_dir=self.test_dir, dim=4)
-            
-            # Add simple document vectors
-            embeddings = [
-                [1.0, 0.0, 0.0, 0.0],  # Document A
-                [0.0, 1.0, 0.0, 0.0],  # Document B
-                [0.0, 0.0, 1.0, 0.0],  # Document C
-            ]
-            metadatas = [
-                {'text': 'Doc A', 'source': 'sourceA'},
-                {'text': 'Doc B', 'source': 'sourceB'},
-                {'text': 'Doc C', 'source': 'sourceC'}
-            ]
-            
-            store.add_documents(embeddings, metadatas)
-            
-            # Query vector that is closest to Document B
-            query_emb = [0.1, 0.9, 0.0, 0.0]
-            results = store.search(query_emb, top_k=2)
-            
-            self.assertEqual(len(results), 2)
-            # The top match should be B due to high inner product (cosine similarity)
-            self.assertEqual(results[0]['meta']['source'], 'sourceB')
-            # The second match should be A (since query has 0.1 and A has 1.0 in index 0)
-            self.assertEqual(results[1]['meta']['source'], 'sourceA')
-            
-            # Test clearing
-            store.clear()
-            self.assertEqual(len(store._metadatas), 0)
-            self.assertIsNone(store._index)
+    def _make_store(self):
+        store = VectorStoreSingleton()
+        store.index_path = os.path.join(self.temp_dir, 'faiss.index')
+        store.metadata_path = os.path.join(self.temp_dir, 'meta.json')
+        return store
+
+    def test_singleton_returns_same_instance(self):
+        a = self._make_store()
+        b = VectorStoreSingleton()
+        self.assertIs(a, b)
+
+    def test_add_chunks_and_search(self):
+        store = self._make_store()
+        chunks = [
+            {'text': 'Aspirin is used for pain relief', 'drug': 'Aspirin'},
+            {'text': 'Paracetamol reduces fever', 'drug': 'Paracetamol'},
+            {'text': 'Ibuprofen is an anti-inflammatory', 'drug': 'Ibuprofen'},
+        ]
+        with patch('rag_model.services.vector_store.embed_texts') as mock_embed:
+            mock_embed.return_value = [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]]
+            store.add_chunks(chunks)
+
+        with patch('rag_model.services.vector_store.embed_query') as mock_query:
+            mock_query.return_value = [0.0, 1.0, 0.0]
+            results = store.search('Paracetamol uses', top_k=2)
+
+        self.assertEqual(len(results), 2)
+        self.assertEqual(results[0][0]['drug'], 'Paracetamol')
+
+    def test_search_returns_empty_when_no_chunks(self):
+        store = self._make_store()
+        store.index = None
+        store.metadata = []
+        results = store.search('anything', top_k=5)
+        self.assertEqual(results, [])
+
+    def test_save_and_load_persists_data(self):
+        store = self._make_store()
+        chunks = [{'text': 'Test document', 'drug': 'Test'}]
+        with patch('rag_model.services.vector_store.embed_texts') as mock_embed:
+            mock_embed.return_value = [[0.5, 0.5]]
+            store.add_chunks(chunks)
+        store.save_index()
+        self.assertTrue(os.path.exists(store.index_path))
+        self.assertTrue(os.path.exists(store.metadata_path))
+        with open(store.metadata_path) as f:
+            data = json.load(f)
+        self.assertEqual(len(data), 1)
+        self.assertEqual(data[0]['text'], 'Test document')
+
+    def test_reset_clears_singleton(self):
+        store = self._make_store()
+        VectorStoreSingleton.reset()
+        store2 = self._make_store()
+        self.assertIsNot(store, store2)

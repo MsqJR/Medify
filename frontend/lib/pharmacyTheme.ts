@@ -1,5 +1,6 @@
 import type { PharmacyThemeSettings } from '@/lib/pharmacy'
 import { getSiteItem, setPublicSiteItem, setScopedItem } from '@/lib/storage'
+import { safeJsonParse } from '@/lib/pharmacyTemplateRuntime'
 
 export type PharmacySectionKey =
   | 'hero'
@@ -32,15 +33,6 @@ const DEFAULT_SECTIONS: Record<PharmacySectionKey, boolean> = {
 }
 
 const HEX_COLOR_RE = /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/
-
-function safeJsonParse<T>(value: string | null): T | null {
-  if (!value) return null
-  try {
-    return JSON.parse(value) as T
-  } catch {
-    return null
-  }
-}
 
 function normalizeHexColor(value: unknown, fallback: string): string {
   if (typeof value !== 'string') return fallback

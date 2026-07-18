@@ -1,7 +1,7 @@
 from unittest.mock import patch, MagicMock
 from django.test import SimpleTestCase
 import requests
-from pharmacies.google_sheet import (
+from pharmacies.services.google_sheet import (
     extract_spreadsheet_id,
     extract_gid,
     build_google_sheet_csv_export_url,

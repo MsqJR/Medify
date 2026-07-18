@@ -1,4 +1,9 @@
 /** @type {import('next').NextConfig} */
+
+// Dev-only allowance so impeccable live mode can load.
+const __impeccableLiveDev =
+  process.env.NODE_ENV === "development" ? " http://localhost:8400" : "";
+
 const nextConfig = {
   reactStrictMode: true,
   poweredByHeader: false, // Disables X-Powered-By header to prevent technology leakage
@@ -8,6 +13,18 @@ const nextConfig = {
       {
         protocol: 'http',
         hostname: 'localhost',
+        port: '8000',
+        pathname: '/media/**',
+      },
+      {
+        protocol: 'http',
+        hostname: '127.0.0.1',
+        port: '8000',
+        pathname: '/media/**',
+      },
+      {
+        protocol: 'http',
+        hostname: '192.168.1.17',
         port: '8000',
         pathname: '/media/**',
       },
@@ -25,7 +42,7 @@ const nextConfig = {
         headers: [
           {
             key: 'Content-Security-Policy',
-            value: "default-src 'self'; frame-src 'self' https://www.google.com https://maps.google.com; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: blob: http://localhost:8000 http://*.localhost:8000 http://127.0.0.1:8000 http://192.168.1.17:8000 https://*.openstreetmap.org https://cdnjs.cloudflare.com; connect-src 'self' ws://localhost:3000 ws://*.localhost:3000 ws://127.0.0.1:3000 http://localhost:8000 http://*.localhost:8000 http://127.0.0.1:8000 http://192.168.1.17:8000 https://nominatim.openstreetmap.org; font-src 'self' data: https://fonts.gstatic.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self';"
+            value: `default-src 'self'; frame-src 'self' https://www.google.com https://maps.google.com; script-src 'self' 'unsafe-eval' 'unsafe-inline'${__impeccableLiveDev}; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: blob: http://localhost:8000 http://*.localhost:8000 http://127.0.0.1:8000 http://192.168.1.17:8000 https://*.openstreetmap.org https://cdnjs.cloudflare.com; connect-src 'self' ws://localhost:3000 ws://*.localhost:3000 ws://127.0.0.1:3000 http://localhost:8000 http://*.localhost:8000 http://127.0.0.1:8000 http://192.168.1.17:8000 https://nominatim.openstreetmap.org${__impeccableLiveDev}; font-src 'self' data: https://fonts.gstatic.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self';`
           },
           {
             key: 'X-Frame-Options',

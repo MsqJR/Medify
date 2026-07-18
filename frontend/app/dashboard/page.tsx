@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { ProgressBar } from '@/components/ui/ProgressBar'
-import { FiUpload, FiLayout, FiFileText, FiGlobe, FiMessageSquare, FiDollarSign } from 'react-icons/fi'
+import { FiUpload, FiLayout, FiFileText, FiGlobe, FiMessageSquare, FiDollarSign, FiAlertTriangle, FiCheckCircle, FiCircle } from 'react-icons/fi'
 import { getScopedItem, setScopedItem } from '@/lib/storage'
 import { getPharmacyOrders, getPharmacyOrdersStats } from '@/lib/orders'
 
@@ -360,13 +360,13 @@ export default function DashboardPage() {
   return (
     <div className="space-y-4 sm:space-y-6 w-full max-w-full overflow-x-hidden">
       <div>
-        <h1 className="text-2xl sm:text-3xl font-bold text-neutral-dark mb-2">Dashboard</h1>
-        <p className="text-sm sm:text-base text-neutral-gray">Welcome back! Here's your website setup progress.</p>
+        <h1 className="text-headline text-neutral-dark mb-2">Dashboard</h1>
+        <p className="text-sm sm:text-base text-neutral-gray leading-relaxed text-pretty">Welcome back! Here's your website setup progress.</p>
       </div>
 
       {/* Setup Progress */}
       <Card className="p-4 sm:p-6">
-        <h2 className="text-lg sm:text-xl font-semibold text-neutral-dark mb-4 sm:mb-6">Setup Progress</h2>
+        <h2 className="text-headline text-neutral-dark mb-4 sm:mb-6">Setup Progress</h2>
         <ProgressBar steps={setupSteps} currentStep={activeStep} />
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-8">
           {userType === 'pharmacy' ? (
@@ -374,21 +374,21 @@ export default function DashboardPage() {
               <Link href="/dashboard/pharmacy/templates">
                 <Card className="p-4 text-center hover:shadow-md transition-shadow cursor-pointer">
                   <FiLayout className="mx-auto mb-3 text-primary" size={32} />
-                  <h3 className="font-medium text-neutral-dark mb-1">1. Choose Template</h3>
+                  <h3 className="text-title text-neutral-dark mb-1">1. Choose Template</h3>
                   <p className="text-sm text-neutral-gray">Select a design</p>
                 </Card>
               </Link>
               <Link href="/dashboard/pharmacy/setup">
                 <Card className="p-4 text-center hover:shadow-md transition-shadow cursor-pointer">
                   <FiFileText className="mx-auto mb-3 text-primary" size={32} />
-                  <h3 className="font-medium text-neutral-dark mb-1">2. Fill Website Options</h3>
+                  <h3 className="text-title text-neutral-dark mb-1">2. Fill Website Options</h3>
                   <p className="text-sm text-neutral-gray">Add products & info</p>
                 </Card>
               </Link>
               <Link href="/dashboard/business-info">
                 <Card className="p-4 text-center hover:shadow-md transition-shadow cursor-pointer">
                   <FiUpload className="mx-auto mb-3 text-primary" size={32} />
-                  <h3 className="font-medium text-neutral-dark mb-1">3. Upload Logo</h3>
+                  <h3 className="text-title text-neutral-dark mb-1">3. Upload Logo</h3>
                   <p className="text-sm text-neutral-gray">Add your logo</p>
                 </Card>
               </Link>
@@ -438,7 +438,7 @@ export default function DashboardPage() {
           <Link href="/dashboard/business-info">
             <Card className="p-4 text-center hover:shadow-md transition-shadow cursor-pointer">
               <FiGlobe className="mx-auto mb-3 text-primary" size={32} />
-              <h3 className="font-medium text-neutral-dark mb-1">Publish</h3>
+              <h3 className="text-title text-neutral-dark mb-1">Publish</h3>
               <p className="text-sm text-neutral-gray">Go live</p>
             </Card>
           </Link>
@@ -452,7 +452,7 @@ export default function DashboardPage() {
         <Card className="p-4 sm:p-6">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
-              <h2 className="text-lg sm:text-xl font-semibold text-neutral-dark mb-2">Pricing Summary</h2>
+              <h2 className="text-headline text-neutral-dark mb-2">Pricing Summary</h2>
               <p className="text-sm sm:text-base text-neutral-gray">
                 {pricingDescription}
               </p>
@@ -483,7 +483,7 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
         {stats.map((stat, index) => (
           <Card key={index} className="p-6">
-            <p className="text-sm text-neutral-gray mb-2">{stat.label}</p>
+            <p className="text-label text-neutral-gray mb-2">{stat.label}</p>
             <p className="text-3xl font-bold text-neutral-dark mb-2">
               <AnimatedNumber value={stat.value} />
             </p>
@@ -497,24 +497,24 @@ export default function DashboardPage() {
       {/* Product Inventory Stats (Pharmacy Only) */}
       {userType === 'pharmacy' && productStats.total > 0 && (
         <Card className="p-4 sm:p-6">
-          <h2 className="text-lg sm:text-xl font-semibold text-neutral-dark mb-4">Product Inventory</h2>
+          <h2 className="text-headline text-neutral-dark mb-4">Product Inventory</h2>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-              <p className="text-sm text-blue-900 font-medium mb-1">Total Products</p>
-              <p className="text-3xl font-bold text-blue-700">{productStats.total}</p>
+            <div className="bg-primary-light p-4 rounded-lg border border-primary-light">
+              <p className="text-sm text-primary font-medium mb-1">Total Products</p>
+              <p className="text-3xl font-bold text-primary">{productStats.total}</p>
             </div>
             {productStats.outOfStock > 0 && (
-              <div className="bg-red-50 p-4 rounded-lg border border-red-200">
-                <p className="text-sm text-red-900 font-medium mb-1">Out of Stock</p>
-                <p className="text-3xl font-bold text-red-700">{productStats.outOfStock}</p>
-                <p className="text-xs text-red-600 mt-1">⚠️ Needs restocking</p>
+              <div className="bg-error-light p-4 rounded-lg border border-error-border">
+                <p className="text-sm text-error font-medium mb-1">Out of Stock</p>
+                <p className="text-3xl font-bold text-error">{productStats.outOfStock}</p>
+                <p className="text-xs text-error mt-1"><FiAlertTriangle size={12} className="inline mr-0.5" /> Needs restocking</p>
               </div>
             )}
             {productStats.lowStock > 0 && (
-              <div className="bg-orange-50 p-4 rounded-lg border border-orange-200">
-                <p className="text-sm text-orange-900 font-medium mb-1">Low Stock</p>
-                <p className="text-3xl font-bold text-orange-700">{productStats.lowStock}</p>
-                <p className="text-xs text-orange-600 mt-1">⚠️ Stock below 5 units</p>
+              <div className="bg-warning-light p-4 rounded-lg border border-warning-border">
+                <p className="text-sm text-warning font-medium mb-1">Low Stock</p>
+                <p className="text-3xl font-bold text-warning">{productStats.lowStock}</p>
+                <p className="text-xs text-warning mt-1"><FiAlertTriangle size={12} className="inline mr-0.5" /> Stock below 5 units</p>
               </div>
             )}
           </div>
@@ -531,7 +531,7 @@ export default function DashboardPage() {
         <Card className="p-4 sm:p-6">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 gap-4">
             <div>
-              <h2 className="text-lg sm:text-xl font-semibold text-neutral-dark mb-1">My Hospital Website</h2>
+              <h2 className="text-headline text-neutral-dark mb-1">My Hospital Website</h2>
               <p className="text-sm text-neutral-gray">
                 {isPublished
                   ? `${hospitalName || 'Your hospital'} is live!`
@@ -573,8 +573,8 @@ export default function DashboardPage() {
               { label: 'Published', done: isPublished },
               { label: 'Website Live', done: isPublished && Boolean(hospitalSubdomain) },
             ].map(item => (
-              <div key={item.label} className={`rounded-lg p-3 text-center text-sm font-medium ${item.done ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-gray-50 text-gray-400 border border-gray-200'}`}>
-                <span className="mr-1">{item.done ? '✅' : '○'}</span>
+              <div key={item.label} className={`rounded-lg p-3 text-center text-sm font-medium ${item.done ? 'bg-success-light text-success border border-success-border' : 'bg-neutral-light text-neutral-gray border border-neutral-border'}`}>
+                <span className="mr-1">{item.done ? <FiCheckCircle size={14} className="inline" /> : <FiCircle size={14} className="inline" />}</span>
                 {item.label}
               </div>
             ))}

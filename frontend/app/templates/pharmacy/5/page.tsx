@@ -15,6 +15,7 @@ import {
 
 import { AIChatbot } from '@/components/pharmacy/AIChatbot'
 import { ProductImage } from '@/components/pharmacy/ProductImage'
+import { BrandLogo } from '@/components/pharmacy/BrandLogo'
 import {
   buildTemplatePath,
   calculateSubtotal,
@@ -108,8 +109,18 @@ function TemplateFiveHomeContent() {
       <header className="sticky top-0 z-40 border-b border-rose-100 bg-white/90 backdrop-blur">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6">
           <Link href={withDemo('/templates/pharmacy/5')} className="inline-flex items-center gap-3">
-            <div className="grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-br from-rose-500 to-orange-400 text-white shadow-lg">
-              <FiSun />
+            <div className="relative h-10 w-10 flex-shrink-0 overflow-hidden rounded-xl bg-gradient-to-br from-rose-500 to-orange-400 text-white shadow-lg flex items-center justify-center p-0.5">
+              {!demoState.isDemo && brand.logo ? (
+                <BrandLogo
+                  src={brand.logo}
+                  alt={`${brand.name || 'Pharmacy'} logo`}
+                  fallbackText={brand.name || 'P'}
+                  imageClassName="h-full w-full object-contain"
+                  fallbackClassName="h-full w-full bg-rose-500 flex items-center justify-center text-white font-bold rounded-lg text-xs"
+                />
+              ) : (
+                <FiSun className="w-4 h-4" />
+              )}
             </div>
             <div>
               <p className="text-sm font-semibold text-slate-900">{brand.name || 'HarborLine Pharmacy'}</p>

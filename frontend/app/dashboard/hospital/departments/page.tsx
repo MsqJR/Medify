@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { PageHeader } from '@/components/dashboard'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Modal } from '@/components/ui/Modal'
@@ -167,24 +168,18 @@ export default function HospitalDepartmentsPage() {
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-5xl mx-auto">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent p-6 rounded-3xl border border-primary/10">
-        <div className="flex items-center gap-4">
-          <div className="p-3 bg-white shadow-sm rounded-2xl">
-            <Building2 className="w-8 h-8 text-primary" />
-          </div>
-          <div>
-            <h1 className="text-3xl font-bold text-neutral-dark tracking-tight">Departments</h1>
-            <p className="mt-1 text-neutral-gray font-medium flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-primary/70" />
-              Manage your hospital's specialized divisions
-            </p>
-          </div>
-        </div>
-        <Button onClick={() => setIsModalOpen(true)} className="rounded-xl shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 transition-all shrink-0 h-12 px-6">
-          <PlusCircle className="w-5 h-5 mr-2" />
-          Add Department
-        </Button>
-      </div>
+      <PageHeader
+        title="Departments"
+        description="Manage your hospital's specialized divisions"
+        icon={<Building2 className="w-8 h-8 text-primary" />}
+        variant="gradient"
+        actions={
+          <Button onClick={() => setIsModalOpen(true)} className="rounded-xl shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 transition-all shrink-0 h-12 px-6">
+            <PlusCircle className="w-5 h-5 mr-2" />
+            Add Department
+          </Button>
+        }
+      />
 
       <Modal isOpen={isModalOpen} onClose={cancelEdit} title={editingId ? 'Edit Department' : 'New Department'}>
         <form onSubmit={handleSubmit} className="space-y-5">

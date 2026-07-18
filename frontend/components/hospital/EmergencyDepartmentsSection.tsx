@@ -1,4 +1,5 @@
 import React from 'react';
+import { FiZap } from 'react-icons/fi';
 import { getHospitalProfile, getHospitalDepartments } from '@/lib/hospitalApi';
 
 export default async function EmergencyDepartmentsSection({ subdomain }: { subdomain: string }) {
@@ -28,7 +29,7 @@ export default async function EmergencyDepartmentsSection({ subdomain }: { subdo
                     {emergencyDepartments.map(dept => (
                         <div key={dept.id} className="bg-white p-5 rounded-xl border border-red-200 shadow-sm flex items-center gap-4">
                             <div className="w-10 h-10 rounded-full bg-red-100 text-red-600 flex items-center justify-center font-bold text-lg flex-shrink-0">
-                                ⚡
+                                <FiZap size={20} />
                             </div>
                             <div>
                                 <h3 className="font-semibold text-gray-900">{dept.name}</h3>

@@ -587,3 +587,68 @@ class MedicalChatbotService:
         else:
             questions.append('Do you have any relevant medical conditions, allergies, or current medications?')
         return questions
+
+
+class ChatbotCoordinatorService:
+    @classmethod
+    def _resolve_ai_settings(cls, website_setup):
+        from core.models import TemplateAISettings
+        ai_settings, _ = TemplateAISettings.objects.get_or_create(
+            website_setup=website_setup,
+        )
+        return ai_settings
+
+    @classmethod
+    def generate_response(
+        cls,
+        *,
+        website_setup,
+        history,
+        user_message,
+        patient_profile=None,
+    ) -> ChatbotResponse:
+        business_type = getattr(website_setup.user, 'business_type', '')
+        ai_settings = cls._resolve_ai_settings(website_setup)
+
+        if business_type == 'hospital':
+            return MedicalChatbotService.generate_response(
+                ai_settings=ai_settings,
+                history=history,
+                user_message=user_message,
+                patient_profile=patient_profile,
+            )
+
+        if business_type == 'pharmacy':
+            from rag_model.services.rag_service import ask_rag
+            rag_result = ask_rag(user_message)
+            return ChatbotResponse(
+                answer=rag_result.get('answer', ''),
+                follow_up_questions=[],
+                possible_conditions=[],
+                recommended_specialties=[],
+                guidance=[],
+                urgency='routine',
+                seek_emergency_care=False,
+                confidence_note=(
+                    f"retrieval_confidence={rag_result.get('confidence_score', 0):.2f}"
+                    if rag_result.get('confidence_score')
+                    else ''
+                ),
+                disclaimer=ai_settings.disclaimer,
+                is_medical_query=True,
+                raw_model_output='',
+            )
+
+        return MedicalChatbotService.generate_fallback_response(
+            ai_settings=ai_settings,
+            user_message=user_message,
+            reason=f"Unrecognized business type: '{business_type}'",
+        )
+
+    @classmethod
+    def generate_fallback_response(cls, *, ai_settings, user_message, reason=''):
+        return MedicalChatbotService.generate_fallback_response(
+            ai_settings=ai_settings,
+            user_message=user_message,
+            reason=reason,
+        )

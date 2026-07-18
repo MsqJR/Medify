@@ -7,7 +7,16 @@ import { FiMinus, FiPlus, FiShoppingCart, FiSearch, FiFilter, FiPackage } from '
 import { BrandLogo } from '@/components/pharmacy/BrandLogo'
 import { ProductImage } from '@/components/pharmacy/ProductImage'
 import { normalizeRenderableProductImageUrl } from '@/lib/productImage'
-import { getSiteItem, setSiteItem, removeSiteItem, setPublicSiteItem, setSiteOwnerId } from '@/lib/storage'
+import { getSiteItem, setSiteItem, removeSiteItem, setPublicSiteItem } from '@/lib/storage'
+import {
+  safeJsonParse,
+  buildTemplatePath,
+  syncSiteOwner,
+  loadBrandInfo,
+  readCart,
+  writeCart,
+  type TemplateBrand,
+} from '@/lib/pharmacyTemplateRuntime'
 
 type Product = {
   id: string
@@ -36,13 +45,13 @@ type BusinessInfo = {
 
 type SortOption = 'name' | 'price-low' | 'price-high' | 'stock'
 
-function safeJsonParse<T>(value: string | null): T | null {
-  if (!value) return null
-  try {
-    return JSON.parse(value) as T
-  } catch {
-    return null
-  }
+const DEMO_BRAND: TemplateBrand = {
+  name: 'Minimal Pharmacy',
+  logo: '/mod logo.png',
+  about: '',
+  phone: '',
+  address: '',
+  openHours: '',
 }
 
 const demoProducts: Product[] = [
@@ -58,16 +67,8 @@ function Template3MedicationsContent() {
   const isDemo = searchParams?.get('demo') === '1' || searchParams?.get('demo') === 'true'
   const ownerId = searchParams?.get('owner') || ''
   const cartKey = isDemo ? 'pharmacy3_cart_demo' : 'pharmacy3_cart'
-
-  const withDemo = (path: string) => {
-    const [base, hash] = path.split('#')
-    const [pathname, query = ''] = base.split('?')
-    const params = new URLSearchParams(query)
-    if (isDemo) params.set('demo', '1')
-    if (ownerId) params.set('owner', ownerId)
-    const nextQuery = params.toString()
-    return `${pathname}${nextQuery ? `?${nextQuery}` : ''}${hash ? `#${hash}` : ''}`
-  }
+  const withDemo = (path: string) => buildTemplatePath(path, { isDemo, ownerId })
+  const demoState = { isDemo, ownerId }
 
   const [cart, setCart] = useState<CartItem[]>([])
   const [pharmacyProducts, setPharmacyProducts] = useState<Product[]>([])
@@ -78,23 +79,12 @@ function Template3MedicationsContent() {
   const [sortBy, setSortBy] = useState<SortOption>('name')
 
   useEffect(() => {
-    if (ownerId) {
-      setSiteOwnerId(ownerId)
-    }
+    syncSiteOwner(ownerId)
   }, [ownerId])
 
-  // Load business info
   useEffect(() => {
-    if (isDemo) {
-      setBusinessInfo({
-        name: 'Minimal Pharmacy',
-        logo: '/mod logo.png'
-      })
-      return
-    }
-    
-    const info = safeJsonParse<BusinessInfo>(getSiteItem('businessInfo'))
-    setBusinessInfo(info)
+    const info = loadBrandInfo(isDemo, DEMO_BRAND)
+    setBusinessInfo({ name: info.name, logo: info.logo ?? undefined })
   }, [isDemo])
 
   // Load products from backend API
@@ -195,19 +185,11 @@ function Template3MedicationsContent() {
   }, [isDemo])
 
   useEffect(() => {
-    const raw = isDemo ? localStorage.getItem(cartKey) : getSiteItem(cartKey)
-    const saved = safeJsonParse<CartItem[]>(raw)
-    setCart(saved || [])
+    setCart(readCart(cartKey, isDemo))
   }, [cartKey, isDemo])
 
   useEffect(() => {
-    if (cart.length > 0) {
-      if (isDemo) localStorage.setItem(cartKey, JSON.stringify(cart))
-      else setSiteItem(cartKey, JSON.stringify(cart))
-    } else {
-      if (isDemo) localStorage.removeItem(cartKey)
-      else removeSiteItem(cartKey)
-    }
+    writeCart(cartKey, isDemo, cart)
   }, [cart, cartKey, isDemo])
 
   const allProducts = useMemo(() => (isDemo ? demoProducts : pharmacyProducts), [isDemo, pharmacyProducts])

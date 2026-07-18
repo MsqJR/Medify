@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useMemo, useState, useCallback } from 'react';
+import { PageHeader } from '@/components/dashboard';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { useToast } from '@/components/ui/ToastProvider';
@@ -10,21 +11,10 @@ import { hospitalAdminApi } from '@/lib/hospitalAdminApi';
 import { SubscriptionProvider, useSubscription } from '@/contexts/SubscriptionContext';
 import { PublishGate } from '@/components/subscription/PublishGate';
 import { PLAN_LABELS, PLAN_BADGE_CLASSES } from '@/lib/subscriptionApi';
-import type { Appointment, AppointmentStatus, Department, Doctor, HospitalProfile } from '@/types/hospital';
-import { FiCheckCircle, FiXCircle, FiSearch, FiTrash2 } from 'react-icons/fi';
+import { STATUS_STYLES } from '@/types/hospital';
+import type { Appointment, Department, Doctor, HospitalProfile } from '@/types/hospital';
+import { FiCheckCircle, FiXCircle, FiSearch, FiTrash2, FiAlertTriangle } from 'react-icons/fi';
 import { ConfirmModal } from '@/components/hospital/ConfirmModal';
-
-// ── Confirmation Modal ────────────────────────────────────────────────────────
-
-// Removed ConfirmModal (extracted)
-
-// ── Status badge ──────────────────────────────────────────────────────────────
-
-const STATUS_STYLES: Record<AppointmentStatus, string> = {
-  PENDING:   'bg-amber-50 text-amber-700 border border-amber-200',
-  CONFIRMED: 'bg-emerald-50 text-emerald-700 border border-emerald-200',
-  CANCELLED: 'bg-rose-50 text-rose-500 border border-rose-200',
-};
 
 // ── Inner component (uses context) ──────────────────────────────────────────
 
@@ -173,23 +163,16 @@ function HospitalDashboardContent() {
       />
 
       {/* Header */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-neutral-dark">Hospital Dashboard</h1>
-          <div className="mt-1 flex items-center gap-2">
-            <p className="text-neutral-gray">{profile?.name || 'Your hospital'} operations overview.</p>
-            {/* Plan badge */}
-            {!subLoading && (
-              <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold ${PLAN_BADGE_CLASSES[planType]}`}>
-                {PLAN_LABELS[planType]}
-                {isActive ? ' · Active' : ' · Inactive'}
-              </span>
-            )}
-          </div>
-        </div>
-
-        {/* Smart publish button */}
-        <div className="flex flex-wrap items-center gap-3">
+      <PageHeader
+        title="Hospital Dashboard"
+        description={`${profile?.name || 'Your hospital'} operations overview.`}
+        badge={!subLoading ? (
+          <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold ${PLAN_BADGE_CLASSES[planType]}`}>
+            {PLAN_LABELS[planType]}
+            {isActive ? ' · Active' : ' · Inactive'}
+          </span>
+        ) : undefined}
+        actions={<div className="flex flex-wrap items-center gap-3">
           <PublishGate
             canPublish={canPublish}
             label="Update Website Info"
@@ -214,13 +197,13 @@ function HospitalDashboardContent() {
           >
             See My Website
           </Button>
-        </div>
-      </div>
+        </div>}
+      />
 
       {/* Subscription warning banner */}
       {!subLoading && !isActive && (
         <div className="rounded-xl border border-amber-200 bg-amber-50 px-5 py-4 flex items-start gap-3">
-          <span className="text-amber-500 text-lg mt-0.5">⚠️</span>
+          <FiAlertTriangle className="text-amber-500 mt-0.5 flex-shrink-0" size={20} />
           <div>
             <p className="text-sm font-semibold text-amber-800">No active subscription</p>
             <p className="text-sm text-amber-700 mt-0.5">

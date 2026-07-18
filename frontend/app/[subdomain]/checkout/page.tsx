@@ -1,6 +1,7 @@
 import React from 'react'
 import { notFound } from 'next/navigation'
 import { getSubdomainPublicInfo } from '@/lib/subdomainApi'
+import { getPharmacyThemeCssVariables, normalizePharmacyThemeSettings } from '@/lib/pharmacyTheme'
 
 // Import template pages
 import PharmacyTemplate1CheckoutPage from '@/app/templates/pharmacy/1/checkout/page'
@@ -53,7 +54,6 @@ export default async function SubdomainCheckoutPage({ params }: PageProps) {
     // Ignore fetch error
   }
   
-  const { getPharmacyThemeCssVariables, normalizePharmacyThemeSettings } = require('@/lib/pharmacyTheme')
   const themeVariables = getPharmacyThemeCssVariables(normalizePharmacyThemeSettings(themeSettings))
 
   return (

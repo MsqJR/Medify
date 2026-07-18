@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import React, { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { Smile } from 'lucide-react';
 import {
   FiAlertCircle,
   FiAlertTriangle,
@@ -168,18 +169,18 @@ export default function PharmacyDashboardPage() {
       {/* ── Header ── */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
-          <div className="h-12 w-12 overflow-hidden rounded-xl border border-neutral-border bg-white flex items-center justify-center shadow-sm">
+          <div className="h-12 w-12 overflow-hidden rounded-xl border border-neutral-border bg-white flex items-center justify-center shadow-sm p-1">
             <BrandLogo
               src={brandLogo}
               alt="Pharmacy logo"
               fallbackText={pharmacyName}
-              imageClassName="h-full w-full object-cover"
-              fallbackClassName="h-full w-full text-sm font-bold text-primary flex items-center justify-center"
+              imageClassName="h-full w-full object-contain"
+              fallbackClassName="h-full w-full text-sm font-bold text-primary flex items-center justify-center rounded-lg"
             />
           </div>
           <div>
             <h1 className="text-2xl font-bold text-neutral-dark">
-              Welcome back, {isLoading ? '...' : pharmacyName} 👋
+              Welcome back, {isLoading ? '...' : pharmacyName} <Smile className="inline-block w-5 h-5 -mt-0.5" />
             </h1>
             <p className="text-sm text-neutral-gray mt-0.5">
               Track your storefront launch, inventory, and publishing status in one place.

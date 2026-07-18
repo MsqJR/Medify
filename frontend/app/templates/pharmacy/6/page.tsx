@@ -19,6 +19,7 @@ import {
 
 import { AIChatbot } from '@/components/pharmacy/AIChatbot'
 import { ProductImage } from '@/components/pharmacy/ProductImage'
+import { BrandLogo } from '@/components/pharmacy/BrandLogo'
 import {
   buildTemplatePath,
   calculateSubtotal,
@@ -120,7 +121,19 @@ function TemplateSixHomeContent() {
       <header className="sticky top-0 z-40 border-b border-slate-800 bg-slate-950/90 backdrop-blur">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6">
           <Link href={withDemo('/templates/pharmacy/6')} className="inline-flex items-center gap-2 text-sm font-semibold text-slate-100">
-            <span className="grid h-9 w-9 place-items-center rounded-xl bg-lime-500 text-slate-950"><FiZap /></span>
+            <div className="relative h-9 w-9 flex-shrink-0 overflow-hidden rounded-xl bg-lime-500 text-slate-950 flex items-center justify-center p-0.5 shadow-sm">
+              {!demoState.isDemo && brand.logo ? (
+                <BrandLogo
+                  src={brand.logo}
+                  alt={`${brand.name || 'Pharmacy'} logo`}
+                  fallbackText={brand.name || 'P'}
+                  imageClassName="h-full w-full object-contain"
+                  fallbackClassName="h-full w-full bg-lime-500 flex items-center justify-center text-slate-950 font-bold rounded-lg text-xs"
+                />
+              ) : (
+                <FiZap className="w-4 h-4" />
+              )}
+            </div>
             {brand.name || 'NeoMeds Studio'}
           </Link>
 

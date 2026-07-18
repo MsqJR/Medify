@@ -4,8 +4,16 @@ import Link from 'next/link'
 import React, { Suspense, useEffect, useMemo, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { FiArrowLeft, FiCheckCircle, FiShoppingCart } from 'react-icons/fi'
-import { submitTemplateOrder } from '@/lib/pharmacyTemplateRuntime'
-import { getSiteItem, setSiteItem, removeSiteItem, getStoredUser, getSiteOwnerId, getPrefixForUserId, getItemForUser, setItemForUser, setSiteOwnerId } from '@/lib/storage'
+import {
+  safeJsonParse,
+  buildTemplatePath,
+  syncSiteOwner,
+  readCart,
+  writeCart,
+  submitTemplateOrder,
+} from '@/lib/pharmacyTemplateRuntime'
+import { digitsOnly, formatCardNumber, formatExpiry, formatCvc, validateCardForm } from '@/lib/cardHelpers'
+import { getSiteItem, setSiteItem, removeSiteItem } from '@/lib/storage'
 
 type Product = {
   id: string
@@ -38,17 +46,8 @@ type DeliveryInfo = {
 type CardInfo = {
   cardholderName: string
   cardNumber: string
-  expiry: string // MM/YY
+  expiry: string
   cvc: string
-}
-
-function safeJsonParse<T>(value: string | null): T | null {
-  if (!value) return null
-  try {
-    return JSON.parse(value) as T
-  } catch {
-    return null
-  }
 }
 
 function Template3CheckoutContent() {
@@ -57,21 +56,11 @@ function Template3CheckoutContent() {
   const isDemo = searchParams?.get('demo') === '1' || searchParams?.get('demo') === 'true'
   const ownerId = searchParams?.get('owner') || ''
   const cartKey = isDemo ? 'pharmacy3_cart_demo' : 'pharmacy3_cart'
-
-  const withDemo = (path: string) => {
-    const [base, hash] = path.split('#')
-    const [pathname, query = ''] = base.split('?')
-    const params = new URLSearchParams(query)
-    if (isDemo) params.set('demo', '1')
-    if (ownerId) params.set('owner', ownerId)
-    const nextQuery = params.toString()
-    return `${pathname}${nextQuery ? `?${nextQuery}` : ''}${hash ? `#${hash}` : ''}`
-  }
+  const withDemo = (path: string) => buildTemplatePath(path, { isDemo, ownerId })
+  const demoState = { isDemo, ownerId }
 
   useEffect(() => {
-    if (ownerId) {
-      setSiteOwnerId(ownerId)
-    }
+    syncSiteOwner(ownerId)
   }, [ownerId])
 
   const [cart, setCart] = useState<CartItem[]>([])
@@ -101,35 +90,16 @@ function Template3CheckoutContent() {
   })
   const [paymentError, setPaymentError] = useState('')
 
-  const digitsOnly = (value: string) => value.replace(/\D+/g, '')
-  const formatCardNumber = (value: string) => {
-    const digits = digitsOnly(value).slice(0, 19)
-    return digits.replace(/(.{4})/g, '$1 ').trim()
-  }
-  const formatExpiry = (value: string) => {
-    const digits = digitsOnly(value).slice(0, 4)
-    if (digits.length <= 2) return digits
-    return `${digits.slice(0, 2)}/${digits.slice(2)}`
-  }
-  const formatCvc = (value: string) => digitsOnly(value).slice(0, 4)
-
   useEffect(() => {
-    const raw = isDemo ? localStorage.getItem(cartKey) : getSiteItem(cartKey)
-    const savedCart = safeJsonParse<CartItem[]>(raw)
-    if (savedCart && savedCart.length > 0) setCart(savedCart)
+    const savedCart = readCart(cartKey, isDemo)
+    if (savedCart.length > 0) setCart(savedCart)
     else setCart([])
     setCartLoaded(true)
   }, [router, cartKey, isDemo])
 
   useEffect(() => {
     if (!cartLoaded) return
-    if (cart.length > 0) {
-      if (isDemo) localStorage.setItem(cartKey, JSON.stringify(cart))
-      else setSiteItem(cartKey, JSON.stringify(cart))
-    } else {
-      if (isDemo) localStorage.removeItem(cartKey)
-      else removeSiteItem(cartKey)
-    }
+    writeCart(cartKey, isDemo, cart)
   }, [cart, cartKey, cartLoaded, isDemo])
 
   const subtotal = useMemo(() => {
@@ -170,20 +140,7 @@ function Template3CheckoutContent() {
     setPaymentError('')
 
     if (formData.paymentMethod === 'card') {
-      const cardNumberDigits = digitsOnly(cardInfo.cardNumber)
-      const expiry = cardInfo.expiry.trim()
-      const cvc = digitsOnly(cardInfo.cvc)
-
-      const expiryMatch = /^(\d{2})\/(\d{2})$/.exec(expiry)
-      const month = expiryMatch ? Number(expiryMatch[1]) : 0
-      const year2 = expiryMatch ? Number(expiryMatch[2]) : -1
-      const isExpiryValid = Boolean(expiryMatch) && month >= 1 && month <= 12 && year2 >= 0
-
-      const isCardNumberValid = cardNumberDigits.length >= 13 && cardNumberDigits.length <= 19
-      const isCvcValid = cvc.length >= 3 && cvc.length <= 4
-      const isNameValid = cardInfo.cardholderName.trim().length >= 2
-
-      if (!isNameValid || !isCardNumberValid || !isExpiryValid || !isCvcValid) {
+      if (!validateCardForm(cardInfo)) {
         setPaymentError('Please enter valid card details (name, card number, expiry MM/YY, and CVC).')
         return
       }

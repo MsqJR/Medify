@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/Input'
 import { Modal } from '@/components/ui/Modal'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { useToast } from '@/components/ui/ToastProvider'
+import { DashboardPageWrapper, PageHeader } from '@/components/dashboard'
 import { authApi } from '@/lib/api'
 import { clearAuthSession, logoutUser } from '@/lib/auth'
 import { pharmacyApi } from '@/lib/pharmacy'
@@ -184,11 +185,11 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-neutral-dark">Settings</h1>
-        <p className="text-neutral-gray mt-1">Manage account preferences and website lifecycle controls.</p>
-      </div>
+    <DashboardPageWrapper>
+      <PageHeader
+        title="Settings"
+        description="Manage account preferences and website lifecycle controls."
+      />
 
       <Card className="p-6">
         <h2 className="text-xl font-semibold text-neutral-dark">Profile</h2>
@@ -338,6 +339,6 @@ export default function SettingsPage() {
           </div>
         </div>
       </Modal>
-    </div>
+    </DashboardPageWrapper>
   )
 }

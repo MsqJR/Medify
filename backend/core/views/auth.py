@@ -5,70 +5,36 @@ from django.contrib.auth import authenticate, get_user_model, logout as django_l
 from django.contrib.auth.tokens import default_token_generator
 from django.core.mail import send_mail
 from django.db import transaction
-from django.utils.encoding import force_bytes, force_str
-from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
-from rest_framework import permissions, serializers, status
+from django.utils.encoding import force_bytes
+from django.utils.http import urlsafe_base64_encode
+from rest_framework import permissions, status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
-from rest_framework_simplejwt.exceptions import TokenError
-from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken, OutstandingToken
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from core.models import WebsiteSetup
 from core.serializers import (
     DeleteAccountSerializer,
     ForgotPasswordSerializer,
+    GoogleLoginSerializer,
     LogoutSerializer,
+    OnboardingSerializer,
     PasswordResetConfirmSerializer,
     PasswordResetTokenValidationSerializer,
     SignupSerializer,
     UserSerializer,
 )
+from core.services.auth_helpers import (
+    blacklist_all_tokens_for_user,
+    blacklist_single_refresh_token,
+    build_password_reset_url,
+    get_user_from_uid,
+)
+from core.services.registration import initialize_user_workspace
 
 
 logger = logging.getLogger(__name__)
 PASSWORD_RESET_GENERIC_RESPONSE = 'If an account exists for this email, a password reset link has been sent.'
-
-
-def _build_password_reset_url(uid: str, token: str) -> str:
-    frontend_url = getattr(settings, 'FRONTEND_URL', 'http://localhost:3000').rstrip('/')
-    reset_path = getattr(settings, 'FRONTEND_PASSWORD_RESET_PATH', '/reset-password')
-    if not reset_path.startswith('/'):
-        reset_path = f'/{reset_path}'
-    return f'{frontend_url}{reset_path}?uid={uid}&token={token}'
-
-
-def _get_user_from_uid(uid: str):
-    user_model = get_user_model()
-    try:
-        decoded_uid = force_str(urlsafe_base64_decode(uid))
-        return user_model.objects.get(pk=decoded_uid, is_active=True)
-    except (TypeError, ValueError, OverflowError, user_model.DoesNotExist):
-        return None
-
-
-def _blacklist_all_tokens_for_user(user):
-    for outstanding_token in OutstandingToken.objects.filter(user=user):
-        BlacklistedToken.objects.get_or_create(token=outstanding_token)
-
-
-def _blacklist_single_refresh_token(refresh_token: str, user):
-    try:
-        token = RefreshToken(refresh_token)
-    except TokenError:
-        return False, 'Invalid or expired refresh token.'
-
-    if str(token.get('user_id')) != str(user.pk):
-        return False, 'Refresh token does not belong to the authenticated user.'
-
-    try:
-        token.blacklist()
-    except TokenError as exc:
-        if 'blacklisted' in str(exc).lower():
-            return True, None
-        return False, 'Invalid or expired refresh token.'
-
-    return True, None
 
 
 @api_view(['GET'])
@@ -114,16 +80,7 @@ def signup(request):
                     counter += 1
                     
                 website_setup = WebsiteSetup.objects.create(user=user, subdomain=subdomain)
-                
-                # If it's a hospital, create the hospital profile
-                if user.business_type == 'hospital':
-                    from hospitals.models.profile import HospitalProfile
-                    from hospitals.services.template_service import generate_default_hospital_template
-                    profile = HospitalProfile.objects.create(
-                        website_setup=website_setup,
-                        name=f"{user.name}'s Hospital"
-                    )
-                    generate_default_hospital_template(website_setup)
+                initialize_user_workspace(user, website_setup)
                     
                 refresh = RefreshToken.for_user(user)
                 return Response({
@@ -176,10 +133,10 @@ def logout(request):
     all_devices = serializer.validated_data.get('all_devices', False)
 
     if all_devices:
-        _blacklist_all_tokens_for_user(request.user)
+        blacklist_all_tokens_for_user(request.user)
 
     if refresh_token:
-        is_valid, error_message = _blacklist_single_refresh_token(refresh_token, request.user)
+        is_valid, error_message = blacklist_single_refresh_token(refresh_token, request.user)
         if not is_valid:
             return Response({'error': error_message}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -190,12 +147,18 @@ def logout(request):
 @api_view(['POST'])
 @permission_classes([permissions.IsAuthenticated])
 def delete_account(request):
-    serializer = DeleteAccountSerializer(data=request.data, context={'request': request})
+    serializer = DeleteAccountSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
 
     user = request.user
+    data = serializer.validated_data
+    if data['email'].strip().lower() != user.email.lower():
+        return Response({'email': 'Email confirmation does not match current account.'}, status=status.HTTP_400_BAD_REQUEST)
+    if not user.check_password(data['password']):
+        return Response({'password': 'Incorrect password.'}, status=status.HTTP_400_BAD_REQUEST)
+
     with transaction.atomic():
-        _blacklist_all_tokens_for_user(user)
+        blacklist_all_tokens_for_user(user)
         django_logout(request)
         user.delete()
 
@@ -215,7 +178,7 @@ def forgot_password(request):
     if user:
         uid = urlsafe_base64_encode(force_bytes(user.pk))
         token = default_token_generator.make_token(user)
-        reset_url = _build_password_reset_url(uid, token)
+        reset_url = build_password_reset_url(uid, token)
         email_subject = 'Reset your Medify password'
         email_body = (
             'We received a request to reset your Medify account password.\n\n'
@@ -245,7 +208,7 @@ def validate_password_reset_token(request):
 
     uid = serializer.validated_data['uid']
     token = serializer.validated_data['token']
-    user = _get_user_from_uid(uid)
+    user = get_user_from_uid(uid)
 
     if not user or not default_token_generator.check_token(user, token):
         return Response(
@@ -264,29 +227,19 @@ def reset_password(request):
 
     uid = serializer.validated_data['uid']
     token = serializer.validated_data['token']
-    user = _get_user_from_uid(uid)
+    user = get_user_from_uid(uid)
 
     if not user or not default_token_generator.check_token(user, token):
         return Response({'error': 'Reset link is invalid or has expired.'}, status=status.HTTP_400_BAD_REQUEST)
 
     user.set_password(serializer.validated_data['password'])
     user.save(update_fields=['password'])
-    _blacklist_all_tokens_for_user(user)
+    blacklist_all_tokens_for_user(user)
 
     return Response(
         {'message': 'Password reset successful. You can now log in with your new password.'},
         status=status.HTTP_200_OK,
     )
-
-
-class GoogleLoginSerializer(serializers.Serializer):
-    id_token = serializers.CharField(required=True)
-
-
-class OnboardingSerializer(serializers.Serializer):
-    business_type = serializers.ChoiceField(choices=['hospital', 'pharmacy'])
-    subdomain = serializers.CharField(max_length=255)
-    business_name = serializers.CharField(max_length=255)
 
 
 @api_view(['POST'])
@@ -374,13 +327,7 @@ def onboarding(request):
         website_setup.save(update_fields=['subdomain', 'updated_at'])
 
     if business_type == 'hospital':
-        from hospitals.models.profile import HospitalProfile
-        from hospitals.services.template_service import generate_default_hospital_template
-        HospitalProfile.objects.get_or_create(
-            website_setup=website_setup,
-            defaults={'name': business_name},
-        )
-        generate_default_hospital_template(website_setup)
+        initialize_user_workspace(user, website_setup)
 
     return Response({
         'status': 'success',

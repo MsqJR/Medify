@@ -83,6 +83,12 @@ export interface AvailableSlotsResponse {
 
 export type AppointmentStatus = 'PENDING' | 'CONFIRMED' | 'CANCELLED';
 
+export const STATUS_STYLES: Record<AppointmentStatus, string> = {
+  PENDING:   'bg-amber-50 text-amber-700 border border-amber-200',
+  CONFIRMED: 'bg-emerald-50 text-emerald-700 border border-emerald-200',
+  CANCELLED: 'bg-rose-50 text-rose-500 border border-rose-200',
+};
+
 export interface Appointment {
     id: string;
     patient_name: string;

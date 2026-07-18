@@ -8,6 +8,8 @@ from django.conf.urls.static import static
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 
+from rag_model.views import RAGAskView
+
 
 @require_http_methods(["GET"])
 def root_view(request):
@@ -26,6 +28,7 @@ urlpatterns = [
     path('api/', include('core.urls')),
     path('api/pharmacy/', include('pharmacies.urls')),
     path('api/hospital/', include('hospitals.urls')),
+    path('api/rag/ask/', RAGAskView.as_view(), name='rag-ask'),
 ]
 
 # Serve media files in development

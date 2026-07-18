@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useEffect, useState, useRef, useCallback } from 'react'
+import { PageHeader } from '@/components/dashboard'
 import {
   FiSave,
   FiSettings,
@@ -13,712 +14,29 @@ import {
   FiDroplet,
   FiSquare,
   FiSliders,
-  FiChevronDown,
-  FiChevronUp,
 } from 'react-icons/fi'
+import { Lock } from 'lucide-react'
 import { hospitalAdminApi } from '@/lib/hospitalAdminApi'
 import { normalizeLogoUrl } from '@/lib/storage'
 import { SubscriptionProvider, useSubscription } from '@/contexts/SubscriptionContext'
 import { LockedFeature } from '@/components/subscription/LockedFeature'
 import { PLAN_LABELS, PLAN_BADGE_CLASSES } from '@/lib/subscriptionApi'
 import type { HospitalProfile } from '@/types/hospital'
+import type { ThemeSettings } from '@/components/hospital/customization/types'
+import { SectionHeader } from '@/components/hospital/customization/SectionHeader'
+import { SettingsCard } from '@/components/hospital/customization/SettingsCard'
+import { ColorField } from '@/components/hospital/customization/ColorField'
+import { ThemePreview } from '@/components/hospital/customization/ThemePreview'
 
-// ── Types ────────────────────────────────────────────────────────────────────
+import {
+  DEFAULT_THEME,
+  AVAILABLE_FONTS,
+  FONT_SIZES,
+  BORDER_RADIUS_OPTIONS,
+  PRESET_THEMES,
+} from '@/lib/hospital/customizationConstants'
 
-interface ThemeSettings {
-  primaryColor?: string
-  backgroundColor?: string
-  surfaceColor?: string
-  surfaceAltColor?: string
-  textColor?: string
-  mutedTextColor?: string
-  borderColor?: string
-  linkColor?: string
-  buttonPrimaryColor?: string
-  buttonPrimaryTextColor?: string
-  buttonPrimaryHoverColor?: string
-  buttonSecondaryColor?: string
-  buttonSecondaryTextColor?: string
-  buttonSecondaryBorderColor?: string
-  buttonSecondaryHoverColor?: string
-  inputBackgroundColor?: string
-  inputBorderColor?: string
-  inputFocusColor?: string
-  fontFamily?: string
-  fontSize?: string
-  fontStyle?: 'normal' | 'italic'
-  chatbotName?: string
-  chatbotColor?: string
-  borderRadius?: string
-  emergencyNumber?: string
-}
 
-// ── Constants ────────────────────────────────────────────────────────────────
-
-const DEFAULT_THEME: ThemeSettings = {
-  primaryColor: '#2563eb',
-  backgroundColor: '#f8fafc',
-  surfaceColor: '#ffffff',
-  surfaceAltColor: '#f1f5f9',
-  textColor: '#0f172a',
-  mutedTextColor: '#475569',
-  borderColor: '#e2e8f0',
-  linkColor: '#2563eb',
-  buttonPrimaryColor: '#2563eb',
-  buttonPrimaryTextColor: '#ffffff',
-  buttonPrimaryHoverColor: '#1d4ed8',
-  buttonSecondaryColor: '#ffffff',
-  buttonSecondaryTextColor: '#1d4ed8',
-  buttonSecondaryBorderColor: '#bfdbfe',
-  buttonSecondaryHoverColor: '#eff6ff',
-  inputBackgroundColor: '#f8fafc',
-  inputBorderColor: '#cbd5e1',
-  inputFocusColor: '#2563eb',
-  fontFamily: 'Inter',
-  fontSize: '16px',
-  fontStyle: 'normal',
-  chatbotName: 'Hospital Medical AI',
-  chatbotColor: '#2563eb',
-  borderRadius: '0.5rem',
-  emergencyNumber: '911',
-}
-
-const AVAILABLE_FONTS = [
-  // ── Sans-serif (Modern & Clean) ──
-  { value: 'Inter', label: 'Inter', description: 'Clean & Modern' },
-  { value: 'Roboto', label: 'Roboto', description: 'Professional' },
-  { value: 'Outfit', label: 'Outfit', description: 'Friendly & Rounded' },
-  { value: 'Nunito', label: 'Nunito', description: 'Soft & Approachable' },
-  { value: 'Poppins', label: 'Poppins', description: 'Geometric & Bold' },
-  { value: 'Lato', label: 'Lato', description: 'Warm & Humanist' },
-  { value: 'Montserrat', label: 'Montserrat', description: 'Strong & Contemporary' },
-  { value: 'Open Sans', label: 'Open Sans', description: 'Neutral & Readable' },
-  { value: 'Source Sans 3', label: 'Source Sans 3', description: 'Versatile & Clear' },
-  { value: 'DM Sans', label: 'DM Sans', description: 'Minimal & Crisp' },
-  { value: 'Manrope', label: 'Manrope', description: 'Technical & Sharp' },
-  { value: 'Plus Jakarta Sans', label: 'Plus Jakarta Sans', description: 'Modern & Balanced' },
-  { value: 'Figtree', label: 'Figtree', description: 'Fresh & Clean' },
-  // ── Serif (Elegant & Traditional) ──
-  { value: 'Playfair Display', label: 'Playfair Display', description: 'Elegant & Serif' },
-  { value: 'Merriweather', label: 'Merriweather', description: 'Readable & Classic' },
-  { value: 'Lora', label: 'Lora', description: 'Literary & Refined' },
-  { value: 'Cormorant Garamond', label: 'Cormorant Garamond', description: 'Luxury & Timeless' },
-  { value: 'EB Garamond', label: 'EB Garamond', description: 'Classic & Editorial' },
-  // ── Monospace ──
-  { value: 'JetBrains Mono', label: 'JetBrains Mono', description: 'Technical & Precise' },
-  { value: 'Fira Code', label: 'Fira Code', description: 'Modern & Structured' },
-]
-
-const FONT_SIZES = [
-  { value: '13px', label: 'XSmall (13px)' },
-  { value: '14px', label: 'Small (14px)' },
-  { value: '16px', label: 'Normal (16px)' },
-  { value: '18px', label: 'Large (18px)' },
-  { value: '20px', label: 'XLarge (20px)' },
-]
-
-const BORDER_RADIUS_OPTIONS = [
-  { value: '0rem', label: 'Sharp', description: '0px – No rounding' },
-  { value: '0.25rem', label: 'Subtle', description: '4px – Slight rounding' },
-  { value: '0.5rem', label: 'Rounded', description: '8px – Standard' },
-  { value: '0.75rem', label: 'Smooth', description: '12px – Softer feel' },
-  { value: '1rem', label: 'Pill', description: '16px – Very rounded' },
-]
-
-const PRESET_THEMES: { name: string; emoji: string; theme: Partial<ThemeSettings> }[] = [
-  {
-    name: 'Ocean Blue',
-    emoji: '🌊',
-    theme: {
-      primaryColor: '#2563eb',
-      backgroundColor: '#f8fafc',
-      surfaceColor: '#ffffff',
-      surfaceAltColor: '#eff6ff',
-      textColor: '#0f172a',
-      mutedTextColor: '#475569',
-      borderColor: '#bfdbfe',
-      linkColor: '#2563eb',
-      buttonPrimaryColor: '#2563eb',
-      buttonPrimaryTextColor: '#ffffff',
-      buttonPrimaryHoverColor: '#1d4ed8',
-      buttonSecondaryColor: '#ffffff',
-      buttonSecondaryTextColor: '#1d4ed8',
-      buttonSecondaryBorderColor: '#bfdbfe',
-      buttonSecondaryHoverColor: '#eff6ff',
-    },
-  },
-  {
-    name: 'Emerald Health',
-    emoji: '🌿',
-    theme: {
-      primaryColor: '#059669',
-      backgroundColor: '#f0fdf4',
-      surfaceColor: '#ffffff',
-      surfaceAltColor: '#dcfce7',
-      textColor: '#052e16',
-      mutedTextColor: '#4b5563',
-      borderColor: '#a7f3d0',
-      linkColor: '#059669',
-      buttonPrimaryColor: '#059669',
-      buttonPrimaryTextColor: '#ffffff',
-      buttonPrimaryHoverColor: '#047857',
-      buttonSecondaryColor: '#ffffff',
-      buttonSecondaryTextColor: '#047857',
-      buttonSecondaryBorderColor: '#a7f3d0',
-      buttonSecondaryHoverColor: '#ecfdf5',
-    },
-  },
-  {
-    name: 'Midnight Dark',
-    emoji: '🌙',
-    theme: {
-      primaryColor: '#6366f1',
-      backgroundColor: '#0f172a',
-      surfaceColor: '#1e293b',
-      surfaceAltColor: '#334155',
-      textColor: '#f1f5f9',
-      mutedTextColor: '#94a3b8',
-      borderColor: '#334155',
-      linkColor: '#818cf8',
-      buttonPrimaryColor: '#6366f1',
-      buttonPrimaryTextColor: '#ffffff',
-      buttonPrimaryHoverColor: '#4f46e5',
-      buttonSecondaryColor: '#1e293b',
-      buttonSecondaryTextColor: '#818cf8',
-      buttonSecondaryBorderColor: '#4f46e5',
-      buttonSecondaryHoverColor: '#312e81',
-    },
-  },
-  {
-    name: 'Rose Medical',
-    emoji: '🌸',
-    theme: {
-      primaryColor: '#e11d48',
-      backgroundColor: '#fff1f2',
-      surfaceColor: '#ffffff',
-      surfaceAltColor: '#ffe4e6',
-      textColor: '#1f1f1f',
-      mutedTextColor: '#6b7280',
-      borderColor: '#fecdd3',
-      linkColor: '#e11d48',
-      buttonPrimaryColor: '#e11d48',
-      buttonPrimaryTextColor: '#ffffff',
-      buttonPrimaryHoverColor: '#be123c',
-      buttonSecondaryColor: '#ffffff',
-      buttonSecondaryTextColor: '#be123c',
-      buttonSecondaryBorderColor: '#fecdd3',
-      buttonSecondaryHoverColor: '#fff1f2',
-    },
-  },
-  {
-    name: 'Amber Warm',
-    emoji: '☀️',
-    theme: {
-      primaryColor: '#d97706',
-      backgroundColor: '#fffbeb',
-      surfaceColor: '#ffffff',
-      surfaceAltColor: '#fef3c7',
-      textColor: '#1c1917',
-      mutedTextColor: '#78716c',
-      borderColor: '#fde68a',
-      linkColor: '#d97706',
-      buttonPrimaryColor: '#d97706',
-      buttonPrimaryTextColor: '#ffffff',
-      buttonPrimaryHoverColor: '#b45309',
-      buttonSecondaryColor: '#ffffff',
-      buttonSecondaryTextColor: '#b45309',
-      buttonSecondaryBorderColor: '#fde68a',
-      buttonSecondaryHoverColor: '#fffbeb',
-    },
-  },
-  {
-    name: 'Purple Care',
-    emoji: '💜',
-    theme: {
-      primaryColor: '#7c3aed',
-      backgroundColor: '#faf5ff',
-      surfaceColor: '#ffffff',
-      surfaceAltColor: '#f3e8ff',
-      textColor: '#1e1b4b',
-      mutedTextColor: '#6b7280',
-      borderColor: '#ddd6fe',
-      linkColor: '#7c3aed',
-      buttonPrimaryColor: '#7c3aed',
-      buttonPrimaryTextColor: '#ffffff',
-      buttonPrimaryHoverColor: '#6d28d9',
-      buttonSecondaryColor: '#ffffff',
-      buttonSecondaryTextColor: '#6d28d9',
-      buttonSecondaryBorderColor: '#ddd6fe',
-      buttonSecondaryHoverColor: '#f5f3ff',
-    },
-  },
-  {
-    name: 'Coral Sunset',
-    emoji: '🌅',
-    theme: {
-      primaryColor: '#f97316',
-      backgroundColor: '#fff7ed',
-      surfaceColor: '#ffffff',
-      surfaceAltColor: '#ffedd5',
-      textColor: '#1c1917',
-      mutedTextColor: '#78716c',
-      borderColor: '#fed7aa',
-      linkColor: '#ea580c',
-      buttonPrimaryColor: '#f97316',
-      buttonPrimaryTextColor: '#ffffff',
-      buttonPrimaryHoverColor: '#ea580c',
-      buttonSecondaryColor: '#ffffff',
-      buttonSecondaryTextColor: '#ea580c',
-      buttonSecondaryBorderColor: '#fed7aa',
-      buttonSecondaryHoverColor: '#fff7ed',
-    },
-  },
-  {
-    name: 'Sky Clinic',
-    emoji: '🩵',
-    theme: {
-      primaryColor: '#0ea5e9',
-      backgroundColor: '#f0f9ff',
-      surfaceColor: '#ffffff',
-      surfaceAltColor: '#e0f2fe',
-      textColor: '#0c1a2e',
-      mutedTextColor: '#4b6280',
-      borderColor: '#bae6fd',
-      linkColor: '#0284c7',
-      buttonPrimaryColor: '#0ea5e9',
-      buttonPrimaryTextColor: '#ffffff',
-      buttonPrimaryHoverColor: '#0284c7',
-      buttonSecondaryColor: '#ffffff',
-      buttonSecondaryTextColor: '#0284c7',
-      buttonSecondaryBorderColor: '#bae6fd',
-      buttonSecondaryHoverColor: '#f0f9ff',
-    },
-  },
-  {
-    name: 'Forest Pine',
-    emoji: '🌲',
-    theme: {
-      primaryColor: '#16a34a',
-      backgroundColor: '#f7fdf9',
-      surfaceColor: '#ffffff',
-      surfaceAltColor: '#dcfce7',
-      textColor: '#14532d',
-      mutedTextColor: '#4b7260',
-      borderColor: '#86efac',
-      linkColor: '#15803d',
-      buttonPrimaryColor: '#16a34a',
-      buttonPrimaryTextColor: '#ffffff',
-      buttonPrimaryHoverColor: '#15803d',
-      buttonSecondaryColor: '#ffffff',
-      buttonSecondaryTextColor: '#15803d',
-      buttonSecondaryBorderColor: '#86efac',
-      buttonSecondaryHoverColor: '#f0fdf4',
-    },
-  },
-  {
-    name: 'Slate Pro',
-    emoji: '🩶',
-    theme: {
-      primaryColor: '#475569',
-      backgroundColor: '#f8fafc',
-      surfaceColor: '#ffffff',
-      surfaceAltColor: '#f1f5f9',
-      textColor: '#0f172a',
-      mutedTextColor: '#64748b',
-      borderColor: '#cbd5e1',
-      linkColor: '#334155',
-      buttonPrimaryColor: '#334155',
-      buttonPrimaryTextColor: '#ffffff',
-      buttonPrimaryHoverColor: '#1e293b',
-      buttonSecondaryColor: '#ffffff',
-      buttonSecondaryTextColor: '#334155',
-      buttonSecondaryBorderColor: '#cbd5e1',
-      buttonSecondaryHoverColor: '#f1f5f9',
-    },
-  },
-  {
-    name: 'Lavender Calm',
-    emoji: '🪻',
-    theme: {
-      primaryColor: '#a855f7',
-      backgroundColor: '#fdf4ff',
-      surfaceColor: '#ffffff',
-      surfaceAltColor: '#fae8ff',
-      textColor: '#2d1a47',
-      mutedTextColor: '#7c5fa0',
-      borderColor: '#e9d5ff',
-      linkColor: '#9333ea',
-      buttonPrimaryColor: '#a855f7',
-      buttonPrimaryTextColor: '#ffffff',
-      buttonPrimaryHoverColor: '#9333ea',
-      buttonSecondaryColor: '#ffffff',
-      buttonSecondaryTextColor: '#9333ea',
-      buttonSecondaryBorderColor: '#e9d5ff',
-      buttonSecondaryHoverColor: '#fdf4ff',
-    },
-  },
-  {
-    name: 'Crimson Care',
-    emoji: '❤️‍🩹',
-    theme: {
-      primaryColor: '#dc2626',
-      backgroundColor: '#fef2f2',
-      surfaceColor: '#ffffff',
-      surfaceAltColor: '#fee2e2',
-      textColor: '#1c0a0a',
-      mutedTextColor: '#7f3232',
-      borderColor: '#fca5a5',
-      linkColor: '#b91c1c',
-      buttonPrimaryColor: '#dc2626',
-      buttonPrimaryTextColor: '#ffffff',
-      buttonPrimaryHoverColor: '#b91c1c',
-      buttonSecondaryColor: '#ffffff',
-      buttonSecondaryTextColor: '#b91c1c',
-      buttonSecondaryBorderColor: '#fca5a5',
-      buttonSecondaryHoverColor: '#fef2f2',
-    },
-  },
-  {
-    name: 'Teal Wellness',
-    emoji: '🩺',
-    theme: {
-      primaryColor: '#0d9488',
-      backgroundColor: '#f0fdfa',
-      surfaceColor: '#ffffff',
-      surfaceAltColor: '#ccfbf1',
-      textColor: '#0f2823',
-      mutedTextColor: '#4a7e78',
-      borderColor: '#99f6e4',
-      linkColor: '#0f766e',
-      buttonPrimaryColor: '#0d9488',
-      buttonPrimaryTextColor: '#ffffff',
-      buttonPrimaryHoverColor: '#0f766e',
-      buttonSecondaryColor: '#ffffff',
-      buttonSecondaryTextColor: '#0f766e',
-      buttonSecondaryBorderColor: '#99f6e4',
-      buttonSecondaryHoverColor: '#f0fdfa',
-    },
-  },
-  {
-    name: 'Golden Hour',
-    emoji: '🌟',
-    theme: {
-      primaryColor: '#ca8a04',
-      backgroundColor: '#fefce8',
-      surfaceColor: '#ffffff',
-      surfaceAltColor: '#fef9c3',
-      textColor: '#1a1500',
-      mutedTextColor: '#7a6a20',
-      borderColor: '#fde047',
-      linkColor: '#a16207',
-      buttonPrimaryColor: '#ca8a04',
-      buttonPrimaryTextColor: '#ffffff',
-      buttonPrimaryHoverColor: '#a16207',
-      buttonSecondaryColor: '#ffffff',
-      buttonSecondaryTextColor: '#a16207',
-      buttonSecondaryBorderColor: '#fde047',
-      buttonSecondaryHoverColor: '#fefce8',
-    },
-  },
-  {
-    name: 'Arctic White',
-    emoji: '🏔️',
-    theme: {
-      primaryColor: '#1e40af',
-      backgroundColor: '#ffffff',
-      surfaceColor: '#f8fafc',
-      surfaceAltColor: '#e2e8f0',
-      textColor: '#0f172a',
-      mutedTextColor: '#64748b',
-      borderColor: '#e2e8f0',
-      linkColor: '#1d4ed8',
-      buttonPrimaryColor: '#1e40af',
-      buttonPrimaryTextColor: '#ffffff',
-      buttonPrimaryHoverColor: '#1e3a8a',
-      buttonSecondaryColor: '#ffffff',
-      buttonSecondaryTextColor: '#1e40af',
-      buttonSecondaryBorderColor: '#bfdbfe',
-      buttonSecondaryHoverColor: '#eff6ff',
-    },
-  },
-]
-
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
-const HEX_RE = /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/
-
-function isValidHex(val: string) {
-  return HEX_RE.test(val)
-}
-
-// ── ColorField ───────────────────────────────────────────────────────────────
-
-function ColorField({
-  label,
-  value = '#000000',
-  onChange,
-  disabled,
-  hint,
-}: {
-  label: string
-  value?: string
-  onChange: (v: string) => void
-  disabled?: boolean
-  hint?: string
-}) {
-  const [text, setText] = useState(value)
-  const [hasError, setHasError] = useState(false)
-
-  useEffect(() => {
-    setText(value)
-    setHasError(false)
-  }, [value])
-
-  const handleTextChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const v = e.target.value
-    setText(v)
-    if (isValidHex(v)) {
-      setHasError(false)
-      onChange(v)
-    } else {
-      setHasError(true)
-    }
-  }
-
-  const handleColorPick = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const v = e.target.value
-    setText(v)
-    setHasError(false)
-    onChange(v)
-  }
-
-  const safeValue = isValidHex(value) ? value : '#000000'
-
-  return (
-    <div>
-      <label className="block text-xs font-semibold text-neutral-gray uppercase tracking-wide mb-1.5">
-        {label}
-      </label>
-      {hint && <p className="text-xs text-neutral-gray mb-1.5 -mt-1">{hint}</p>}
-      <div className="flex items-center gap-2">
-        <div className="relative shrink-0">
-          <input
-            type="color"
-            value={safeValue}
-            onChange={handleColorPick}
-            disabled={disabled}
-            className="h-10 w-10 cursor-pointer rounded-lg border-2 border-neutral-border p-0.5 bg-white disabled:cursor-not-allowed disabled:opacity-50 transition-all hover:border-primary"
-            style={{ appearance: 'none' }}
-          />
-        </div>
-        <input
-          type="text"
-          value={text}
-          onChange={handleTextChange}
-          disabled={disabled}
-          placeholder="#000000"
-          maxLength={7}
-          className={`flex-1 rounded-lg border px-3 py-2 text-sm font-mono transition-all outline-none focus:ring-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed ${
-            hasError
-              ? 'border-error bg-red-50 focus:ring-error'
-              : 'border-neutral-border bg-white focus:border-primary'
-          }`}
-        />
-        <div
-          className="h-10 w-10 rounded-lg border border-neutral-border shrink-0 shadow-inner"
-          style={{ backgroundColor: safeValue }}
-        />
-      </div>
-      {hasError && (
-        <p className="mt-1 text-xs text-error">Enter a valid hex color (e.g. #2563eb)</p>
-      )}
-    </div>
-  )
-}
-
-// ── SectionHeader ────────────────────────────────────────────────────────────
-
-function SectionHeader({
-  icon,
-  title,
-  subtitle,
-  expanded,
-  onToggle,
-}: {
-  icon: React.ReactNode
-  title: string
-  subtitle?: string
-  expanded: boolean
-  onToggle: () => void
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onToggle}
-      className="w-full flex items-center justify-between gap-3 text-left group"
-    >
-      <div className="flex items-center gap-3">
-        <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary text-lg transition-colors group-hover:bg-primary/20">
-          {icon}
-        </span>
-        <div>
-          <p className="font-semibold text-neutral-dark text-sm">{title}</p>
-          {subtitle && <p className="text-xs text-neutral-gray">{subtitle}</p>}
-        </div>
-      </div>
-      <span className="text-neutral-gray transition-transform">
-        {expanded ? <FiChevronUp size={18} /> : <FiChevronDown size={18} />}
-      </span>
-    </button>
-  )
-}
-
-// ── ThemePreview ─────────────────────────────────────────────────────────────
-
-function ThemePreview({ theme, hospitalName }: { theme: ThemeSettings; hospitalName: string }) {
-  const fontUrl = theme.fontFamily
-    ? `https://fonts.googleapis.com/css2?family=${theme.fontFamily.replace(/ /g, '+')}:wght@400;600;700&display=swap`
-    : null
-
-  const safeRadius = theme.borderRadius || '0.5rem'
-  const safeFontSize = theme.fontSize || '16px'
-  const safeFontStyle = theme.fontStyle || 'normal'
-
-  return (
-    <div
-      className="rounded-xl overflow-hidden border border-neutral-border shadow-lg text-sm"
-      style={{
-        backgroundColor: theme.backgroundColor || '#f8fafc',
-        fontFamily: `'${theme.fontFamily || 'Inter'}', sans-serif`,
-        fontSize: safeFontSize,
-        fontStyle: safeFontStyle,
-        color: theme.textColor || '#0f172a',
-      }}
-    >
-      {fontUrl && <link href={fontUrl} rel="stylesheet" />}
-
-      {/* Header bar */}
-      <div
-        className="px-4 py-3 flex items-center justify-between"
-        style={{ backgroundColor: theme.surfaceColor || '#ffffff', borderBottom: `1px solid ${theme.borderColor || '#e2e8f0'}` }}
-      >
-        <div className="flex items-center gap-2">
-          <div
-            className="h-7 w-7 rounded-full flex items-center justify-center text-[10px] font-bold"
-            style={{ backgroundColor: theme.buttonPrimaryColor || '#2563eb', color: theme.buttonPrimaryTextColor || '#ffffff', borderRadius: '9999px' }}
-          >
-            {(hospitalName || 'H')[0].toUpperCase()}
-          </div>
-          <span className="font-bold text-xs" style={{ color: theme.textColor }}>{hospitalName || 'My Hospital'}</span>
-        </div>
-        <nav className="flex items-center gap-3 text-[10px]">
-          {['Home', 'Doctors', 'Contact'].map((item) => (
-            <span key={item} className="cursor-pointer" style={{ color: theme.mutedTextColor }}>{item}</span>
-          ))}
-          <span
-            className="px-2.5 py-1 text-[10px] font-semibold"
-            style={{
-              backgroundColor: theme.buttonPrimaryColor || '#2563eb',
-              color: theme.buttonPrimaryTextColor || '#ffffff',
-              borderRadius: safeRadius,
-            }}
-          >
-            Book
-          </span>
-        </nav>
-      </div>
-
-      {/* Hero section */}
-      <div
-        className="px-4 py-5"
-        style={{ backgroundColor: theme.surfaceAltColor || '#f1f5f9' }}
-      >
-        <div
-          className="text-[11px] font-semibold uppercase tracking-widest mb-1"
-          style={{ color: theme.linkColor || theme.primaryColor || '#2563eb' }}
-        >
-          Welcome
-        </div>
-        <h1
-          className="text-base font-bold leading-snug mb-2"
-          style={{ color: theme.textColor, fontFamily: `'${theme.fontFamily || 'Inter'}', sans-serif` }}
-        >
-          Expert Medical Care
-        </h1>
-        <p className="text-[11px] leading-relaxed mb-3" style={{ color: theme.mutedTextColor }}>
-          Compassionate care with modern clinical excellence. Book your appointment today.
-        </p>
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            className="px-3 py-1.5 text-[10px] font-semibold transition-colors"
-            style={{
-              backgroundColor: theme.buttonPrimaryColor || '#2563eb',
-              color: theme.buttonPrimaryTextColor || '#ffffff',
-              borderRadius: safeRadius,
-            }}
-          >
-            Book Appointment
-          </button>
-          <button
-            type="button"
-            className="px-3 py-1.5 text-[10px] font-semibold border transition-colors"
-            style={{
-              backgroundColor: theme.buttonSecondaryColor || '#ffffff',
-              color: theme.buttonSecondaryTextColor || '#1d4ed8',
-              borderColor: theme.buttonSecondaryBorderColor || '#bfdbfe',
-              borderRadius: safeRadius,
-            }}
-          >
-            Our Doctors
-          </button>
-        </div>
-      </div>
-
-      {/* Cards row */}
-      <div className="px-4 py-4 grid grid-cols-3 gap-2">
-        {['Cardiology', 'Neurology', 'Orthopedics'].map((dept) => (
-          <div
-            key={dept}
-            className="p-2.5 rounded text-center"
-            style={{
-              backgroundColor: theme.surfaceColor || '#ffffff',
-              border: `1px solid ${theme.borderColor || '#e2e8f0'}`,
-              borderRadius: safeRadius,
-            }}
-          >
-            <div className="text-[10px] font-semibold mb-0.5" style={{ color: theme.textColor }}>{dept}</div>
-            <div className="text-[9px]" style={{ color: theme.mutedTextColor }}>Specialists</div>
-          </div>
-        ))}
-      </div>
-
-      {/* Input preview */}
-      <div className="px-4 pb-4">
-        <input
-          type="text"
-          readOnly
-          placeholder="Search for a doctor..."
-          className="w-full text-[10px] px-3 py-2 outline-none"
-          style={{
-            backgroundColor: theme.inputBackgroundColor || '#f8fafc',
-            border: `1px solid ${theme.inputBorderColor || '#cbd5e1'}`,
-            color: theme.textColor,
-            borderRadius: safeRadius,
-          }}
-        />
-      </div>
-
-      {/* Footer strip */}
-      <div
-        className="px-4 py-2 text-[9px] text-center"
-        style={{ backgroundColor: '#0f172a', color: '#94a3b8' }}
-      >
-        © {new Date().getFullYear()} {hospitalName || 'My Hospital'} · All rights reserved
-      </div>
-    </div>
-  )
-}
 
 // ── Main inner component ──────────────────────────────────────────────────────
 
@@ -900,20 +218,15 @@ function CustomizationContent() {
 
   return (
     <div className="pb-12">
-      {/* ── Page header ── */}
-      <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-neutral-dark">Website Customization</h1>
-          <div className="mt-1 flex flex-wrap items-center gap-2">
-            <p className="text-neutral-gray text-sm">Design your hospital's public website and AI chatbot.</p>
-            {!subLoading && (
-              <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold ${PLAN_BADGE_CLASSES[planType]}`}>
-                {PLAN_LABELS[planType]}{isActive ? ' · Active' : ' · Inactive'}
-              </span>
-            )}
-          </div>
-        </div>
-        <div className="flex items-center gap-2 flex-wrap">
+      <PageHeader
+        title="Website Customization"
+        description="Design your hospital's public website and AI chatbot."
+        badge={!subLoading && (
+          <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold ${PLAN_BADGE_CLASSES[planType]}`}>
+            {PLAN_LABELS[planType]}{isActive ? ' · Active' : ' · Inactive'}
+          </span>
+        )}
+        actions={<div className="flex items-center gap-2 flex-wrap">
           <button
             type="button"
             onClick={() => setShowPreview((p) => !p)}
@@ -941,8 +254,8 @@ function CustomizationContent() {
             }
             {saving ? 'Saving...' : 'Save Changes'}
           </button>
-        </div>
-      </div>
+        </div>}
+      />
 
       {/* ── Alerts ── */}
       {error && (
@@ -958,7 +271,7 @@ function CustomizationContent() {
       {/* ── Plan access banner ── */}
       {!subLoading && !canCustomize && !isActive && (
         <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-5 py-4 flex items-start gap-3">
-          <span className="text-amber-500 text-lg mt-0.5">🔒</span>
+          <Lock className="text-amber-500 w-5 h-5 mt-0.5 shrink-0" />
           <div>
             <p className="text-sm font-semibold text-amber-800">Premium Plan Required</p>
             <p className="text-xs text-amber-700 mt-0.5">
@@ -969,7 +282,7 @@ function CustomizationContent() {
       )}
       {!subLoading && !canCustomize && isActive && (
         <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-5 py-4 flex items-start gap-3">
-          <span className="text-amber-500 text-lg mt-0.5">🔒</span>
+          <Lock className="text-amber-500 w-5 h-5 mt-0.5 shrink-0" />
           <div>
             <p className="text-sm font-semibold text-amber-800">Premium Plan Required</p>
             <p className="text-xs text-amber-700 mt-0.5">
@@ -992,7 +305,7 @@ function CustomizationContent() {
 
           {/* ── PRESET THEMES ── */}
           <LockedFeature locked={!canCustomize} featureName="Website Customization">
-            <div className="rounded-xl border border-neutral-border bg-white p-5 shadow-sm">
+            <SettingsCard>
               <div className="mb-4 flex items-center gap-2">
                 <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
                   <FiDroplet size={16} />
@@ -1022,20 +335,20 @@ function CustomizationContent() {
                     </div>
                     <div>
                       <div className="text-xs font-semibold text-neutral-dark group-hover:text-primary transition-colors">
-                        {preset.emoji} {preset.name}
+                        <preset.icon className="inline-block w-4 h-4" /> {preset.name}
                       </div>
                     </div>
                   </button>
                 ))}
               </div>
-            </div>
+            </SettingsCard>
           </LockedFeature>
 
 
 
           {/* ── TYPOGRAPHY ── */}
           <LockedFeature locked={!canCustomize} featureName="Website Customization">
-            <div className="rounded-xl border border-neutral-border bg-white p-5 shadow-sm">
+            <SettingsCard>
               <SectionHeader
                 icon={<FiType size={16} />}
                 title="Typography"
@@ -1123,12 +436,12 @@ function CustomizationContent() {
                   </div>
                 </div>
               )}
-            </div>
+            </SettingsCard>
           </LockedFeature>
 
           {/* ── COLORS ── */}
           <LockedFeature locked={!canCustomize} featureName="Website Customization">
-            <div className="rounded-xl border border-neutral-border bg-white p-5 shadow-sm">
+            <SettingsCard>
               <SectionHeader
                 icon={<FiDroplet size={16} />}
                 title="Colors"
@@ -1196,12 +509,12 @@ function CustomizationContent() {
                   />
                 </div>
               )}
-            </div>
+            </SettingsCard>
           </LockedFeature>
 
           {/* ── BUTTON COLORS ── */}
           <LockedFeature locked={!canCustomize} featureName="Website Customization">
-            <div className="rounded-xl border border-neutral-border bg-white p-5 shadow-sm">
+            <SettingsCard>
               <SectionHeader
                 icon={<FiSquare size={16} />}
                 title="Button Colors"
@@ -1295,12 +608,12 @@ function CustomizationContent() {
                   </div>
                 </div>
               )}
-            </div>
+            </SettingsCard>
           </LockedFeature>
 
           {/* ── INPUT COLORS ── */}
           <LockedFeature locked={!canCustomize} featureName="Website Customization">
-            <div className="rounded-xl border border-neutral-border bg-white p-5 shadow-sm">
+            <SettingsCard>
               <SectionHeader
                 icon={<FiSliders size={16} />}
                 title="Form Input Colors"
@@ -1352,12 +665,12 @@ function CustomizationContent() {
                   </div>
                 </div>
               )}
-            </div>
+            </SettingsCard>
           </LockedFeature>
 
           {/* ── CORNER STYLE ── */}
           <LockedFeature locked={!canCustomize} featureName="Website Customization">
-            <div className="rounded-xl border border-neutral-border bg-white p-5 shadow-sm">
+            <SettingsCard>
               <SectionHeader
                 icon={<FiLayout size={16} />}
                 title="Corner Style"
@@ -1403,12 +716,12 @@ function CustomizationContent() {
                   </div>
                 </div>
               )}
-            </div>
+            </SettingsCard>
           </LockedFeature>
 
           {/* ── AI CHATBOT ── */}
           <LockedFeature locked={!canCustomize} featureName="Website Customization">
-            <div className="rounded-xl border border-neutral-border bg-white p-5 shadow-sm">
+            <SettingsCard>
               <SectionHeader
                 icon={<FiMessageSquare size={16} />}
                 title="AI Chatbot Settings"
@@ -1499,7 +812,7 @@ function CustomizationContent() {
                             }
                           }}
                           placeholder="Ask a medical question (e.g. 'I have chest pain')..."
-                          className="flex-1 rounded-lg border border-neutral-border px-3 py-2 text-xs outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all"
+                          className="min-w-0 flex-1 rounded-lg border border-neutral-border px-3 py-2 text-xs outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all"
                         />
                         <button
                           type="button"
@@ -1514,7 +827,7 @@ function CustomizationContent() {
                   </div>
                 </div>
               )}
-            </div>
+            </SettingsCard>
           </LockedFeature>
 
           {/* Save button bottom */}

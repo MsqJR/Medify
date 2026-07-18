@@ -1,0 +1,48 @@
+# Git
+.git
+.gitignore
+
+# Python
+__pycache__
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+*.egg
+
+# Virtual environments
+myenv/
+venv/
+env/
+.venv/
+
+# Environment files (contain secrets)
+.env
+.env.local
+.env.*.local
+
+# Local databases (SQLite — development only)
+db.sqlite3
+*.sqlite3
+
+# Node / frontend (not needed for backend build)
+node_modules/
+frontend/
+.next/
+
+# IDE / OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Documentation / specs (not shipped to production)
+*.md
+docs/
+specs/
+documentation/
+
+# Testing artifacts
+.coverage
+htmlcov/
+.pytest_cache/

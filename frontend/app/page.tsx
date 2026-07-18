@@ -1,515 +1,186 @@
 'use client'
 
-import React, { useState } from 'react'
+import React from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { Button } from '@/components/ui/Button'
-import { Card } from '@/components/ui/Card'
-import { FiCheck, FiStar, FiChevronLeft, FiChevronRight } from 'react-icons/fi'
+import { Reveal } from '@/hooks/useReveal'
+import { FiCheck, FiZap } from 'react-icons/fi'
 
-export default function LandingPage() {
-  const [currentTemplate, setCurrentTemplate] = useState(0)
-
-  const templates = [
-    {
-      name: 'Modern Pharmacy',
-      description: 'Clean and modern design',
-      image: '/first_templete.png',
-    },
-    {
-      name: 'Classic Pharmacy',
-      description: 'Traditional design with professional look',
-      image: '/sec_temp.png',  
-    },
-    {
-      name: 'Minimal Pharmacy',
-      description: 'Minimalist design focusing on products',
-      image: '/third_temp.png',
-    },
-  ]
-
-  const steps = [
-    { 
-      number: 1, 
-      title: 'Choose Type', 
-      description: 'Choose what kind of medical website you want to build.',
-      hospital: 'Select Hospital as your website type',
-      pharmacy: 'Select Pharmacy as your website type',
-    },
-    { 
-      number: 2, 
-      title: 'Select Features / Template', 
-      description: 'Customize the experience for your patients and customers.',
-      hospital: 'Pick hospital features and layout with clear pricing',
-      pharmacy: 'Choose your pharmacy template and review included features',
-    },
-    { 
-      number: 3, 
-      title: 'Payment', 
-      description: 'Secure online payment with Visa or Fawry.',
-      hospital: 'Securely pay for the features you selected',
-      pharmacy: 'Securely pay for your chosen template',
-    },
-    { 
-      number: 4, 
-      title: 'Enter Info & Publish', 
-      description: 'Add your details and launch your website.',
-      hospital: 'Add your hospital information, review, and publish your site',
-      pharmacy: 'Add your pharmacy details, customize content, and publish',
-    },
-  ]
-
-  const pricingPlans = [
-    {
-      name: 'Hospital Websites',
-      price: 'From $9',
-      period: '/month',
-      features: [
-        'Basic Plan: $9/month',
-        'Premium Plan: $29/month',
-        'AI Chatbot, Reviews, WhatsApp & Themes included in Premium',
-        'Guided setup & department manager',
-        'No setup fees, cancel anytime',
-      ],
-    },
-    {
-      name: 'Pharmacy Templates',
-      price: '$15 - $28',
-      period: 'one-time',
-      features: [
-        'Minimal Pharmacy template: $15',
-        'Classic Pharmacy template: $20',
-        'Premium (Modern, Bento, Glass, Concierge): $24 - $28',
-        'AI Chatbot & WhatsApp buttons included',
-        'Bidirectional Google Sheets Sync',
-      ],
-      popular: true,
-    },
-  ]
-
-  const testimonials = [
-    {
-      name: 'Dr. Sarah Johnson',
-      role: 'Chief Medical Officer',
-      company: 'City Hospital',
-      content: 'Medify helped us launch our website in just one day. The process was incredibly smooth.',
-      rating: 5,
-    },
-    {
-      name: 'Michael Chen',
-      role: 'Pharmacy Owner',
-      company: 'HealthPlus Pharmacy',
-      content: 'The templates are beautiful and the AI assistant is a game-changer for managing our online presence.',
-      rating: 4,
-    },
-    {
-      name: 'Dr. Emily Rodriguez',
-      role: 'Clinic Director',
-      company: 'Family Care Clinic',
-      content: 'Best investment we made. Our patient bookings increased by 40% after launching our Medify website.',
-      rating: 4,
-    },
-    {
-      name: 'Dr. Ahmed Hassan',
-      role: 'Hospital Director',
-      company: 'Nile Medical Center',
-      content: 'We created a professional hospital website without any technical team. The interface is very easy and clear.',
-      rating: 5,
-    },
-    {
-      name: 'Sara Youssef',
-      role: 'Pharmacy Manager',
-      company: 'CarePlus Pharmacy',
-      content: 'Online orders and prescription refills became much easier for our patients after using Medify templates.',
-      rating: 3,
-    },
-    {
-      name: 'Dr. Omar Ali',
-      role: 'Clinic Owner',
-      company: 'Downtown Medical Clinic',
-      content: 'The booking system and AI assistant helped us reduce phone calls and increase online appointments.',
-      rating: 4,
-    },
-    {
-      name: 'Dr. Lina Mansour',
-      role: 'Pediatric Specialist',
-      company: 'Family Health Hospital',
-      content: 'Parents love how easy it is to find information about our doctors and book visits online.',
-      rating: 5,
-    },
-    {
-      name: 'Youssef Kamal',
-      role: 'IT Manager',
-      company: 'GreenLife Pharmacy Group',
-      content: 'We manage multiple pharmacy websites from one place now. Medify saved us a lot of time and cost.',
-      rating: 4,
-    },
-    {
-      name: 'Dr. Mariam El-Shenawy',
-      role: 'Dermatology Consultant',
-      company: 'Glow Skin Clinic',
-      content: 'The clean design and SEO-friendly structure helped new patients discover our clinic faster.',
-      rating: 4,
-    },
-  ]
-
-  const [testimonialIndex, setTestimonialIndex] = useState(0)
-  const [touchStart, setTouchStart] = useState(0)
-  const [touchEnd, setTouchEnd] = useState(0)
-  const [templateTouchStart, setTemplateTouchStart] = useState(0)
-  const [templateTouchEnd, setTemplateTouchEnd] = useState(0)
-
-  // Handle touch swipe for mobile testimonials
-  const handleTouchStart = (e: React.TouchEvent) => {
-    setTouchStart(e.targetTouches[0].clientX)
-  }
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    setTouchEnd(e.targetTouches[0].clientX)
-  }
-
-  const handleTouchEnd = () => {
-    if (!touchStart || !touchEnd) return
-    
-    const distance = touchStart - touchEnd
-    const isLeftSwipe = distance > 50
-    const isRightSwipe = distance < -50
-
-    if (isLeftSwipe) {
-      setTestimonialIndex((prev) =>
-        testimonials.length ? (prev + 1) % testimonials.length : 0
-      )
-    }
-    if (isRightSwipe) {
-      setTestimonialIndex((prev) =>
-        testimonials.length ? (prev - 1 + testimonials.length) % testimonials.length : 0
-      )
-    }
-    
-    // Reset touch values
-    setTouchStart(0)
-    setTouchEnd(0)
-  }
-
-  // Handle touch swipe for mobile templates
-  const handleTemplateTouchStart = (e: React.TouchEvent) => {
-    setTemplateTouchStart(e.targetTouches[0].clientX)
-  }
-
-  const handleTemplateTouchMove = (e: React.TouchEvent) => {
-    setTemplateTouchEnd(e.targetTouches[0].clientX)
-  }
-
-  const handleTemplateTouchEnd = () => {
-    if (!templateTouchStart || !templateTouchEnd) return
-    
-    const distance = templateTouchStart - templateTouchEnd
-    const isLeftSwipe = distance > 50
-    const isRightSwipe = distance < -50
-
-    if (isLeftSwipe) {
-      setCurrentTemplate((prev) => (prev + 1) % templates.length)
-    }
-    if (isRightSwipe) {
-      setCurrentTemplate((prev) => (prev - 1 + templates.length) % templates.length)
-    }
-    
-    // Reset touch values
-    setTemplateTouchStart(0)
-    setTemplateTouchEnd(0)
-  }
-
-  const handleNextTemplate = () => {
-    setCurrentTemplate((prev) => (prev + 1) % templates.length)
-  }
-
-  const handlePrevTemplate = () => {
-    setCurrentTemplate((prev) => (prev - 1 + templates.length) % templates.length)
-  }
-
+export default function AltLandingPage() {
   return (
     <div className="min-h-screen bg-white text-neutral-dark overflow-x-hidden w-full">
-      {/* Navigation */}
-      <nav className="sticky top-0 z-20 border-b border-neutral-border bg-white/80 backdrop-blur overflow-x-hidden w-full">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between w-full">
-          <Link href="/" className="flex items-center gap-2 sm:gap-3">
-            <div className="relative h-8 w-8 sm:h-10 sm:w-10 flex-shrink-0">
+      {/* Minimal nav */}
+      <nav className="sticky top-0 z-20 border-b border-neutral-border/50 bg-white/90 backdrop-blur-md overflow-x-hidden w-full">
+        <div className="max-w-6xl mx-auto px-3 sm:px-6 py-2.5 sm:py-4 flex items-center justify-between">
+          <Link href="/" className="flex items-center flex-shrink-0">
+            <div className="relative w-32 h-10 sm:w-44 sm:h-14 flex-shrink-0">
               <Image
-                src="/mod logo.png"
+                src="/logo.svg"
                 alt="Medify logo"
                 fill
-                className="object-contain"
-                sizes="40px"
+                className="object-contain filter drop-shadow-[0_1.5px_2px_rgba(0,0,0,0.12)]"
                 priority
               />
             </div>
-            <span className="text-xl sm:text-2xl font-bold text-primary font-display">Medify</span>
           </Link>
-          <div className="hidden md:flex items-center gap-6">
-            <Link href="#templates" className="text-sm font-medium text-neutral-gray hover:text-primary transition-colors">
-              Templates
+          <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">
+            <Link 
+              href="/login" 
+              className="text-[11px] sm:text-sm text-neutral-gray hover:text-primary transition-colors whitespace-nowrap inline-flex items-center justify-center font-medium min-h-[36px] sm:min-h-[40px] px-2.5"
+            >
+              <span className="hidden sm:inline mr-1">Already have a site? </span><span className="font-semibold">Log in</span>
             </Link>
-            <Link href="#features" className="text-sm font-medium text-neutral-gray hover:text-primary transition-colors">
-              Features
-            </Link>
-            <Link href="#pricing" className="text-sm font-medium text-neutral-gray hover:text-primary transition-colors">
-              Pricing
-            </Link>
-          </div>
-          <div className="flex items-center gap-2 sm:gap-4">
-            <Link href="/login" className="text-sm sm:text-base text-neutral-gray hover:text-primary transition-colors">
-              Login
-            </Link>
-            <Link href="/signup">
-              <Button className="text-sm sm:text-base px-4 sm:px-6 py-2">Get Started</Button>
+            <Link 
+              href="/signup" 
+              className="px-3 sm:px-5 py-2 sm:py-2 text-[11px] sm:text-sm bg-primary text-white hover:bg-primary-dark inline-flex items-center justify-center gap-2 rounded-xl font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-white motion-safe:hover:-translate-y-0.5 h-9 sm:h-10"
+            >
+              Get Started
             </Link>
           </div>
         </div>
       </nav>
 
-      {/* Hero Section */}
-      <section className="relative hero-aurora py-14 sm:py-24 overflow-x-hidden w-full">
-        <div className="absolute -top-24 -right-12 h-64 w-64 rounded-full bg-primary-light opacity-60 blur-3xl" />
-        <div className="absolute bottom-0 -left-16 h-80 w-80 rounded-full bg-primary-light opacity-50 blur-3xl" />
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 w-full">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-14 items-center">
-          <div className="order-2 md:order-1">
-            <div className="inline-flex items-center gap-2 rounded-full border border-neutral-border bg-white/80 px-4 py-2 text-xs sm:text-sm font-semibold text-primary shadow-sm animate-soft-rise">
-              <span className="h-2 w-2 rounded-full bg-primary" />
-              Built for hospitals and pharmacies
-            </div>
-            <h1 className="font-display text-4xl sm:text-5xl md:text-6xl leading-tight text-neutral-dark mt-5 mb-4 sm:mb-6 animate-soft-rise">
-              Build Your Medical Website in Minutes
-            </h1>
-            <p className="text-base sm:text-lg md:text-xl text-neutral-gray mb-6 sm:mb-10 max-w-2xl animate-soft-rise">
-              Create professional websites for hospitals and pharmacies with a guided setup, modern templates, and an AI assistant ready to support your patients.
-            </p>
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4 animate-soft-rise">
-              <Link href="/signup?type=hospital" className="flex-1 sm:flex-initial">
-                <Button variant="primary" className="w-full sm:w-auto text-base sm:text-lg px-6 sm:px-8 py-3 sm:py-4">
-                  Create Hospital Website
-                </Button>
-              </Link>
-              <Link href="/signup?type=pharmacy" className="flex-1 sm:flex-initial">
-                <Button variant="secondary" className="w-full sm:w-auto text-base sm:text-lg px-6 sm:px-8 py-3 sm:py-4">
-                  Create Pharmacy Website
-                </Button>
-              </Link>
-            </div>
-            <div className="mt-8 grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 text-sm">
+      {/* Hero — one headline, one CTA, no clutter */}
+      <section className="relative min-h-[80vh] flex items-center overflow-hidden">
+        <div className="absolute inset-0 bg-[radial-gradient(800px_400px_at_50%_-20%,rgba(27,118,255,0.15),transparent_60%),radial-gradient(600px_300px_at_80%_80%,rgba(27,118,255,0.08),transparent_50%),linear-gradient(180deg,#f6fbfb_0%,#ffffff_60%)]" />
+        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[600px] rounded-full bg-primary/3 blur-3xl" />
+        <div className="max-w-6xl mx-auto px-6 w-full relative z-10">
+          <div className="max-w-2xl mx-auto text-center">
+            <Reveal delay={1} className="w-full">
+              <h1 className="font-display text-5xl sm:text-7xl lg:text-8xl leading-[1.05] text-neutral-dark tracking-[-0.03em] text-balance">
+                Your medical website.
+                <br />
+                <span className="text-primary">Online in seconds.</span>
+              </h1>
+            </Reveal>
+            <Reveal delay={2} className="w-full">
+              <p className="text-base sm:text-lg text-neutral-gray mt-6 mb-10 max-w-lg mx-auto leading-relaxed text-pretty">
+                No builders. No agencies. No waiting. Just your facility, your domain, your patients&mdash;in the time it takes to finish your coffee.
+              </p>
+            </Reveal>
+            <Reveal delay={3} className="w-full">
+              <div className="flex justify-center">
+                <Link 
+                  href="/signup" 
+                  className="inline-flex items-center justify-center gap-2 rounded-xl font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-white bg-primary text-white hover:bg-primary-dark motion-safe:hover:-translate-y-0.5 px-10 py-4 text-base sm:text-lg shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 hover:-translate-y-0.5"
+                >
+                  <FiZap className="inline-block mr-1" size={20} />
+                  Build Your Site
+                </Link>
+              </div>
+            </Reveal>
+          </div>
+        </div>
+      </section>
+
+      {/* Speed visual — proof, not promise */}
+      <section className="py-24 sm:py-32 overflow-hidden">
+        <div className="max-w-6xl mx-auto px-6">
+          <div className="max-w-3xl mx-auto">
+            <Reveal delay={1} className="w-full">
+              <div className="text-center mb-16">
+                <span className="inline-flex items-center gap-2 text-sm font-semibold text-primary uppercase tracking-[0.12em]">
+                  <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+                  From zero to live
+                </span>
+              </div>
+            </Reveal>
+            <div className="grid grid-cols-3 gap-0 relative">
               {[
-                { title: 'Launch fast', value: 'Go live in Seconds' },
-                { title: 'Secure checkout', value: 'Visa and Fawry ready' },
-                { title: 'AI Assistant', value: 'Support 24/7' },
-              ].map((item) => (
-                <div key={item.title} className="glass-card rounded-2xl px-4 py-3">
-                  <p className="text-neutral-gray text-xs uppercase tracking-[0.18em]">
-                    {item.title}
-                  </p>
-                  <p className="font-semibold text-neutral-dark mt-1">{item.value}</p>
-                </div>
+                { label: 'Sign up', time: '15s', desc: 'Create your account' },
+                { label: 'Customize', time: '30s', desc: 'Pick a template, add your details' },
+                { label: 'Publish', time: '15s', desc: 'Go live with one click' },
+              ].map((step, i) => (
+                <Reveal key={step.label} delay={i + 1} className="w-full">
+                  <div className="text-center px-4 relative">
+                    <div className="text-4xl sm:text-5xl font-bold text-primary font-display mb-2">{step.time}</div>
+                    <div className="text-xs sm:text-sm font-semibold text-neutral-dark uppercase tracking-[0.08em] mb-1">{step.label}</div>
+                    <p className="text-xs sm:text-sm text-neutral-gray">{step.desc}</p>
+                    {i < 2 && (
+                      <div className="hidden sm:block absolute top-6 -right-0 text-neutral-border text-2xl font-light">/</div>
+                    )}
+                  </div>
+                </Reveal>
               ))}
             </div>
-          </div>
-          <div className="relative h-64 sm:h-80 order-1 md:order-2 w-full max-w-full">
-            <div className="absolute -top-6 -left-4 h-24 w-24 rounded-3xl bg-primary-light opacity-80" />
-            <div className="absolute inset-0 rounded-3xl overflow-hidden shadow-xl bg-white w-full">
-              <Image
-                src="/logo.png"
-                alt="Hospital website preview"
-                fill
-                className="object-cover"
-                priority
-                sizes="(max-width: 768px) 100vw, 50vw"
-              />
-            </div>
-            <div className="absolute -bottom-5 right-6 glass-card rounded-2xl px-4 py-3 shadow-lg">
-              <p className="text-xs text-neutral-gray uppercase tracking-[0.16em]">AI Assistant</p>
-              <p className="font-semibold text-neutral-dark">Included</p>
-            </div>
-          </div>
-        </div>
-        </div>
-      </section>
-
-      {/* Steps Section */}
-      <section className="section-glow py-12 sm:py-20 overflow-x-hidden w-full">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 w-full">
-          <h2 className="font-display text-3xl sm:text-4xl font-bold text-center text-neutral-dark mb-8 sm:mb-12">
-            How It Works
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 mb-8 sm:mb-12">
-            {/* Hospital Flow */}
-            <div>
-              <h3 className="text-2xl font-semibold text-neutral-dark mb-6 text-center font-display">
-                Hospital
-              </h3>
-              <div className="space-y-6">
-                {steps.map((step) => (
-                  <div key={step.number} className="flex items-start gap-4 glass-card rounded-2xl p-4">
-                    <div className="w-12 h-12 bg-primary text-white rounded-2xl flex items-center justify-center text-lg font-bold flex-shrink-0">
-                      {step.number}
-                    </div>
-                    <div>
-                      <h4 className="text-lg font-semibold text-neutral-dark mb-1">
-                        {step.title}
-                      </h4>
-                      <p className="text-neutral-gray text-sm">{step.hospital}</p>
-                    </div>
-                  </div>
-                ))}
+            <Reveal delay={4} className="w-full">
+              <div className="text-center mt-12 pt-12 border-t border-neutral-border">
+                <p className="text-2xl sm:text-3xl font-semibold text-neutral-dark font-display text-balance">
+                  One minute. Two clicks. Done.
+                </p>
               </div>
-            </div>
-            {/* Pharmacy Flow */}
-            <div>
-              <h3 className="text-2xl font-semibold text-neutral-dark mb-6 text-center font-display">
-                Pharmacy
-              </h3>
-              <div className="space-y-6">
-                {steps.map((step) => (
-                  <div key={step.number} className="flex items-start gap-4 glass-card rounded-2xl p-4">
-                    <div className="w-12 h-12 bg-primary text-white rounded-2xl flex items-center justify-center text-lg font-bold flex-shrink-0">
-                      {step.number}
-                    </div>
-                    <div>
-                      <h4 className="text-lg font-semibold text-neutral-dark mb-1">
-                        {step.title}
-                      </h4>
-                      <p className="text-neutral-gray text-sm">{step.pharmacy}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
+            </Reveal>
           </div>
         </div>
       </section>
 
-      {/* Pharmacy Templates */}
-      <section id="templates" className="py-12 sm:py-20 overflow-x-hidden w-full">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 w-full">
-          <h2 className="font-display text-3xl sm:text-4xl font-bold text-center text-neutral-dark mb-3">
-            Pharmacy Templates
-          </h2>
-          <p className="text-center text-neutral-gray mb-8 sm:mb-12 max-w-2xl mx-auto">
-            Choose a template that matches your pharmacy brand, then customize colors, content, and products.
-          </p>
-          {/* Mobile: Single template with swipe (no inline styles) */}
-          <div className="block md:hidden mb-6">
-            <div
-              className="overflow-hidden"
-              onTouchStart={handleTemplateTouchStart}
-              onTouchMove={handleTemplateTouchMove}
-              onTouchEnd={handleTemplateTouchEnd}
-            >
-              <div className="px-2">
-                {templates[currentTemplate] && (
-                  <Card className="ring-2 ring-primary overflow-hidden">
-                    <div className="h-64 bg-neutral-light rounded-t-2xl flex items-center justify-center relative overflow-hidden w-full max-w-full">
-                      <Image
-                        src={templates[currentTemplate].image}
-                        alt={templates[currentTemplate].name}
-                        fill
-                        className="object-contain bg-neutral-light transition-transform duration-300"
-                        sizes="100vw"
-                      />
-                    </div>
-                    <div className="p-6">
-                      <h3 className="text-xl font-semibold text-neutral-dark mb-2">
-                        {templates[currentTemplate].name}
-                      </h3>
-                      <p className="text-neutral-gray">
-                        {templates[currentTemplate].description}
-                      </p>
-                    </div>
-                  </Card>
-                )}
-              </div>
-            </div>
-          </div>
-          {/* Desktop: 3 templates grid */}
-          <div className="hidden md:grid md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-6">
-            {templates.map((template, index) => (
-              <Card
-                key={index}
-                className={`${index === currentTemplate ? 'ring-2 ring-primary' : ''} cursor-pointer group overflow-hidden`}
-                onClick={() => setCurrentTemplate(index)}
-              >
-                <div className="h-64 bg-neutral-light rounded-t-2xl flex items-center justify-center relative overflow-hidden w-full max-w-full">
-                  <Image
-                    src={template.image}
-                    alt={template.name}
-                    fill
-                    className="object-contain bg-neutral-light transition-transform duration-300 group-hover:scale-105"
-                    sizes="(max-width: 1024px) 50vw, 33vw"
-                  />
+      {/* Simplicity ladder — 3 universal steps */}
+      <section className="py-24 sm:py-32 bg-[radial-gradient(600px_250px_at_50%_0%,rgba(27,118,255,0.06),transparent_60%)] overflow-hidden">
+        <div className="max-w-6xl mx-auto px-6">
+          <Reveal delay={1} className="w-full">
+            <h2 className="font-display text-4xl sm:text-5xl font-semibold text-center text-neutral-dark mb-4 text-balance">
+              Three clicks. No complexity.
+            </h2>
+          </Reveal>
+          <Reveal delay={2} className="w-full">
+            <p className="text-center text-neutral-gray mb-16 max-w-lg mx-auto leading-relaxed text-pretty">
+              We stripped away every unnecessary choice. Just the decisions that matter.
+            </p>
+          </Reveal>
+          <div className="max-w-2xl mx-auto space-y-6">
+            {[
+              { number: '01', title: 'Tell us what you need', desc: 'Hospital or pharmacy? We tailor everything — dashboard, features, templates — to your facility type.' },
+              { number: '02', title: 'Pick your look and go', desc: 'Choose from professionally designed templates, add your logo and colors, and preview your live site in real time.' },
+              { number: '03', title: 'Publish. That\u2019s it.', desc: 'One click and your site is live. No hosting setup, no domain config, no deployment pipeline.' },
+            ].map((step, i) => (
+              <Reveal key={step.number} delay={i + 1} className="w-full">
+                <div className="flex items-start gap-6 bg-white border border-neutral-border rounded-2xl p-6 sm:p-8 shadow-sm">
+                  <div className="hidden sm:flex w-14 h-14 bg-primary/10 text-primary rounded-xl items-center justify-center text-lg font-bold font-display flex-shrink-0">
+                    {step.number}
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-semibold text-neutral-dark mb-2">{step.title}</h3>
+                    <p className="text-neutral-gray leading-relaxed" dangerouslySetInnerHTML={{ __html: step.desc }} />
+                  </div>
                 </div>
-                <div className="p-6">
-                  <h3 className="text-xl font-semibold text-neutral-dark mb-2">
-                    {template.name}
-                  </h3>
-                  <p className="text-neutral-gray">{template.description}</p>
-                </div>
-              </Card>
+              </Reveal>
             ))}
           </div>
-          {/* Carousel controls */}
-          <div className="flex items-center justify-center gap-4">
-            <button
-              type="button"
-              onClick={handlePrevTemplate}
-              className="p-2 rounded-full border border-neutral-border text-neutral-gray hover:text-primary hover:border-primary transition-colors bg-white"
-              aria-label="Previous template"
-            >
-              <FiChevronLeft size={20} />
-            </button>
-            <div className="flex gap-2">
-              {templates.map((_, index) => (
-                <button
-                  key={index}
-                  type="button"
-                  onClick={() => setCurrentTemplate(index)}
-                  className={`w-2.5 h-2.5 rounded-full transition-colors ${
-                    index === currentTemplate ? 'bg-primary' : 'bg-neutral-border'
-                  }`}
-                  aria-label={`Go to template ${index + 1}`}
-                />
-              ))}
-            </div>
-            <button
-              type="button"
-              onClick={handleNextTemplate}
-              className="p-2 rounded-full border border-neutral-border text-neutral-gray hover:text-primary hover:border-primary transition-colors bg-white"
-              aria-label="Next template"
-            >
-              <FiChevronRight size={20} />
-            </button>
-          </div>
         </div>
       </section>
 
-      {/* AI Assistant Feature */}
-      <section id="features" className="section-glow py-12 sm:py-20 overflow-x-hidden w-full">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 w-full">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 items-center">
-            <div>
-              <h2 className="font-display text-3xl sm:text-4xl font-bold text-neutral-dark mb-6">
-                AI-Powered Assistant for Patients
+      {/* AI Assistant — key feature alt was missing */}
+      <section className="py-24 sm:py-32 bg-white overflow-hidden">
+        <div className="max-w-6xl mx-auto px-6">
+          <div className="grid md:grid-cols-2 gap-12 md:gap-16 items-center">
+            <Reveal delay={1} className="w-full">
+              <span className="inline-flex items-center gap-2 text-sm font-semibold text-primary uppercase tracking-[0.12em] mb-5">
+                <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+                AI-powered
+              </span>
+              <h2 className="font-display text-4xl sm:text-5xl font-semibold text-neutral-dark mt-4 mb-6 text-balance">
+                A 24/7 assistant for every patient
               </h2>
-              <p className="text-lg text-neutral-gray mb-6">
-                Help your patients get instant, accurate answers to their questions 24/7. Our AI assistant understands medical terminology and supports them with clear, friendly information about services, medications, and appointments.
+              <p className="text-neutral-gray mb-8 leading-relaxed text-pretty">
+                Medify&rsquo;s AI understands medical terminology and gives patients instant, accurate answers &mdash; about services, medications, appointments, and more. It works around the clock, never gets tired, and frees your staff for the work that matters.
               </p>
               <ul className="space-y-3">
-                {['Answer common patient questions', 'Guide patients to the right department or doctor', 'Support appointment booking and follow-up', 'Explain medications and pharmacy services in simple language'].map((feature) => (
-                  <li key={feature} className="flex items-center gap-3">
-                    <FiCheck className="text-success" size={20} />
-                    <span className="text-neutral-dark">{feature}</span>
+                {[
+                  'Answers common patient questions instantly',
+                  'Guides patients to the right doctor or department',
+                  'Handles appointment booking and follow-ups',
+                  'Explains medications and services in plain language',
+                ].map((f) => (
+                  <li key={f} className="flex items-center gap-3 text-sm text-neutral-dark">
+                    <FiCheck className="text-success shrink-0" size={18} />
+                    <span>{f}</span>
                   </li>
                 ))}
               </ul>
-            </div>
-            <div className="glass-card rounded-3xl p-6 sm:p-8 shadow-lg w-full max-w-full">
-              <div className="bg-neutral-light rounded-2xl p-0 h-64 overflow-hidden relative w-full max-w-full">
+            </Reveal>
+            <Reveal delay={2} className="w-full">
+              <div className="bg-neutral-light border border-neutral-border rounded-3xl p-0 h-72 sm:h-96 overflow-hidden relative">
                 <Image
                   src="/chatbot.webp"
                   alt="AI assistant chatbot helping build a medical website"
@@ -518,222 +189,225 @@ export default function LandingPage() {
                   sizes="(max-width: 768px) 100vw, 50vw"
                 />
               </div>
-            </div>
+            </Reveal>
           </div>
         </div>
       </section>
 
-      {/* Pricing Plans */}
-      <section id="pricing" className="py-12 sm:py-20 overflow-x-hidden w-full">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 w-full">
-          <h2 className="font-display text-3xl sm:text-4xl font-bold text-center text-neutral-dark mb-8 sm:mb-12">
-            Pricing Plans
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 max-w-4xl mx-auto">
-            {pricingPlans.map((plan) => (
-              <Card
-                key={plan.name}
-                className={`relative overflow-hidden p-8 ${plan.popular ? 'ring-2 ring-primary' : ''} before:content-[''] before:absolute before:inset-0 before:bg-gradient-to-br before:from-primary-light before:to-white before:opacity-0 before:transition-opacity hover:before:opacity-100`}
-              >
-                {plan.popular && (
-                  <div className="bg-primary text-white text-sm font-medium px-3 py-1 rounded-full inline-block mb-4 relative z-10">
-                    Most Popular
+      {/* Social proof — floating testimonials */}
+      <section className="py-24 sm:py-32 overflow-hidden">
+        <div className="max-w-6xl mx-auto px-6">
+          <Reveal delay={1} className="w-full">
+            <h2 className="font-display text-3xl sm:text-4xl font-semibold text-center text-neutral-dark mb-4 text-balance">
+              Trusted by medical professionals
+            </h2>
+          </Reveal>
+          <Reveal delay={2} className="w-full">
+            <p className="text-center text-neutral-gray mb-14 max-w-md mx-auto leading-relaxed text-pretty">
+              From independent clinics to multi-location hospitals.
+            </p>
+          </Reveal>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+            {[
+              {
+                name: 'Dr. Sarah Johnson',
+                role: 'CMO, City Hospital',
+                content: 'We launched our hospital website in under an hour. The guided setup walked us through everything we needed.',
+              },
+              {
+                name: 'Michael Chen',
+                role: 'Owner, HealthPlus Pharmacy',
+                content: 'I had my pharmacy storefront live in one sitting. The templates are gorgeous and the AI chatbot is incredible.',
+              },
+              {
+                name: 'Dr. Ahmed Hassan',
+                role: 'Director, Nile Medical Center',
+                content: 'A professional hospital website without any technical team. The interface is clear and the results speak for themselves.',
+              },
+            ].map((t, i) => (
+              <Reveal key={t.name} delay={i + 1} className="w-full">
+                <div className="bg-white border border-neutral-border rounded-2xl p-6 sm:p-8 shadow-sm h-full flex flex-col">
+                  <p className="text-neutral-gray leading-relaxed mb-6 flex-1">
+                    &ldquo;{t.content}&rdquo;
+                  </p>
+                  <div className="pt-4 border-t border-neutral-border">
+                    <p className="font-semibold text-neutral-dark">{t.name}</p>
+                    <p className="text-sm text-neutral-gray">{t.role}</p>
                   </div>
-                )}
-                <h3 className="text-2xl font-bold text-neutral-dark mb-2 relative z-10">
-                  {plan.name}
-                </h3>
-                <div className="mb-6 relative z-10">
-                  <span className="text-4xl font-bold text-neutral-dark">
-                    {plan.price}
-                  </span>
-                  <span className="text-neutral-gray"> {plan.period}</span>
                 </div>
-                <ul className="space-y-3 mb-8 relative z-10">
-                  {plan.features.map((feature) => (
-                    <li key={feature} className="flex items-center gap-3">
-                      <FiCheck className="text-success" size={20} />
-                      <span className="text-neutral-dark">{feature}</span>
+              </Reveal>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* What you can build — hospital & pharmacy showcase */}
+      <section className="py-24 sm:py-32 bg-[radial-gradient(600px_250px_at_50%_0%,rgba(27,118,255,0.06),transparent_60%)] overflow-hidden">
+        <div className="max-w-6xl mx-auto px-6">
+          <Reveal delay={1} className="w-full">
+            <h2 className="font-display text-4xl sm:text-5xl font-semibold text-center text-neutral-dark mb-4 text-balance">
+              See what you can build
+            </h2>
+          </Reveal>
+          <Reveal delay={2} className="w-full">
+            <p className="text-center text-neutral-gray mb-14 max-w-lg mx-auto leading-relaxed text-pretty">
+              Every Medify site starts with a professionally designed template. Customize colors, content, and features &mdash; no coding required.
+            </p>
+          </Reveal>
+          <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+            {[
+              {
+                type: 'Hospital',
+                tag: 'For Hospitals &amp; Clinics',
+                desc: 'Department pages, doctor profiles, appointment booking, and AI chatbot &mdash; everything a modern medical practice needs to serve patients online.',
+                features: ['Doctor profiles & departments', 'Appointment booking system', 'Patient portal', 'AI chatbot'],
+                href: '/templates/hospital',
+                img: '/logo.png',
+              },
+              {
+                type: 'Pharmacy',
+                tag: 'For Pharmacies',
+                desc: 'Product catalog, e-commerce checkout, prescription refills, and Google Sheets sync &mdash; a full online storefront built in one session.',
+                features: ['Product catalog & inventory', 'Online ordering & checkout', 'Prescription management', 'Google Sheets sync'],
+                href: '/templates/pharmacy/1?demo=1',
+                img: '/first_templete.png',
+              },
+            ].map((p, i) => (
+              <Reveal key={p.type} delay={i + 2} className="w-full">
+                <div className="bg-white border border-neutral-border rounded-3xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                  <div className="h-48 sm:h-56 bg-neutral-light relative overflow-hidden">
+                    <Image
+                      src={p.img}
+                      alt={`${p.type} website preview`}
+                      fill
+                      className="object-contain"
+                      sizes="(max-width: 768px) 100vw, 50vw"
+                    />
+                  </div>
+                  <div className="p-6 sm:p-8">
+                    <div className="inline-flex items-center gap-2 rounded-full bg-primary-light px-3 py-1 text-xs font-semibold text-primary mb-4">
+                      {p.tag}
+                    </div>
+                    <p className="text-neutral-gray text-sm leading-relaxed mb-5">{p.desc}</p>
+                    <ul className="space-y-2 mb-6">
+                      {p.features.map((f) => (
+                        <li key={f} className="flex items-center gap-2.5 text-sm text-neutral-dark">
+                          <FiCheck size={15} className="text-primary shrink-0" />
+                          <span>{f}</span>
+                        </li>
+                      ))}
+                    </ul>
+                    <Link 
+                      href={p.href}
+                      className="w-full inline-flex items-center justify-center gap-2 rounded-xl font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-white px-6 py-3 text-sm bg-white text-primary border-2 border-primary hover:bg-primary-light hover:text-primary-dark"
+                    >
+                      Preview {p.type} Template
+                    </Link>
+                  </div>
+                </div>
+              </Reveal>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Pricing — one line */}
+      <section className="py-20 sm:py-28 bg-primary-dark overflow-hidden">
+        <div className="max-w-5xl mx-auto px-6">
+          <Reveal delay={1} className="w-full">
+            <p className="text-center text-primary-light font-semibold text-sm uppercase tracking-[0.12em] mb-4">Simple pricing</p>
+          </Reveal>
+          <Reveal delay={2} className="w-full">
+            <h2 className="font-display text-4xl sm:text-5xl font-semibold text-center text-white mb-4 text-balance">
+              From $9/month. No setup fees.
+            </h2>
+          </Reveal>
+          <Reveal delay={3} className="w-full">
+            <p className="text-center text-primary-light mb-12 max-w-lg mx-auto leading-relaxed text-pretty">
+              Every plan includes AI chatbot, booking, and everything you need. Pick the path that fits your facility.
+            </p>
+          </Reveal>
+          <div className="grid md:grid-cols-2 gap-6 max-w-3xl mx-auto">
+            <Reveal delay={3} className="w-full">
+              <div className="bg-white/10 backdrop-blur-sm border border-white/15 rounded-3xl p-7 sm:p-8 h-full flex flex-col">
+                <h3 className="text-2xl font-bold text-white mb-1 font-display">Hospital</h3>
+                <p className="text-primary-light/80 text-sm mb-4">Websites &amp; patient portal</p>
+                <div className="mb-6">
+                  <span className="text-4xl font-bold text-white font-display">$9</span>
+                  <span className="text-primary-light/80 text-sm font-medium ml-1">/month</span>
+                </div>
+                <ul className="space-y-2.5 mb-8 flex-1">
+                  {[
+                    'Basic: $9/mo \u2014 essential site & booking',
+                    'Premium: $29/mo \u2014 AI, reviews, WhatsApp',
+                    'Guided setup & department manager',
+                    'No setup fees, cancel anytime',
+                  ].map((f) => (
+                    <li key={f} className="flex items-start gap-2.5 text-sm text-white">
+                      <FiCheck size={15} className="text-primary-light/60 mt-0.5 shrink-0" />
+                      <span>{f}</span>
                     </li>
                   ))}
                 </ul>
-                <Link href="/signup" className="block w-full relative z-10">
-                  <Button variant={plan.popular ? 'primary' : 'secondary'} className="w-full">
-                    Get Started
-                  </Button>
+                <Link 
+                  href="/signup?type=hospital" 
+                  className="w-full inline-flex items-center justify-center gap-2 rounded-xl font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50 bg-white text-primary px-6 py-3 text-sm hover:bg-white/90 shadow-lg shadow-black/10"
+                >
+                  Choose Hospital Plan
                 </Link>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Testimonials */}
-      <section className="section-glow py-12 sm:py-20 overflow-x-hidden w-full">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 w-full">
-          <h2 className="font-display text-3xl sm:text-4xl font-bold text-center text-neutral-dark mb-8 sm:mb-12">
-            What Our Customers Say
-          </h2>
-          {/* Mobile: Single testimonial with swipe (no inline styles) */}
-          <div className="block md:hidden mb-8">
-            <div
-              className="overflow-hidden"
-              onTouchStart={handleTouchStart}
-              onTouchMove={handleTouchMove}
-              onTouchEnd={handleTouchEnd}
-            >
-              <div className="px-2">
-                {testimonials[testimonialIndex] && (
-                  <Card className="p-6">
-                    <div className="flex gap-1 mb-4">
-                      {Array(
-                        testimonials[testimonialIndex].rating
-                          ? testimonials[testimonialIndex].rating
-                          : 0
-                      )
-                        .fill(null)
-                        .map((_, i) => (
-                          <FiStar key={i} className="text-warning fill-warning" />
-                        ))}
-                    </div>
-                    <p className="text-neutral-gray mb-6 italic">
-                      {testimonials[testimonialIndex].content}
-                    </p>
-                    <div>
-                      <p className="font-semibold text-neutral-dark">
-                        {testimonials[testimonialIndex].name}
-                      </p>
-                      <p className="text-sm text-neutral-gray">
-                        {testimonials[testimonialIndex].role},{' '}
-                        {testimonials[testimonialIndex].company}
-                      </p>
-                    </div>
-                  </Card>
-                )}
               </div>
-            </div>
-          </div>
-          {/* Desktop: 3 testimonials grid */}
-          <div className="hidden md:grid md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8 mb-8">
-            {[
-              testimonials[testimonialIndex],
-              testimonials[(testimonialIndex + 1) % testimonials.length],
-              testimonials[(testimonialIndex + 2) % testimonials.length],
-            ].map((testimonial, index) => (
-              <Card key={`${testimonial?.name}-${index}`} className="p-6">
-                <div className="flex gap-1 mb-4">
-                  {[...(testimonial?.rating ? Array(testimonial.rating) : [])].map((_, i) => (
-                    <FiStar key={i} className="text-warning fill-warning" />
+            </Reveal>
+            <Reveal delay={4} className="w-full">
+              <div className="bg-white/10 backdrop-blur-sm border border-white/15 rounded-3xl p-7 sm:p-8 h-full flex flex-col">
+                <h3 className="text-2xl font-bold text-white mb-1 font-display">Pharmacy</h3>
+                <p className="text-primary-light/80 text-sm mb-4">E-commerce storefront</p>
+                <div className="mb-6">
+                  <span className="text-4xl font-bold text-white font-display">$15</span>
+                  <span className="text-primary-light/80 text-sm font-medium ml-1">&ndash;$28 one-time</span>
+                </div>
+                <ul className="space-y-2.5 mb-8 flex-1">
+                  {[
+                    'Minimal $15 / Classic $20',
+                    'Premium: Modern, Bento, Glass, Concierge $24-28',
+                    'AI chatbot, WhatsApp & Sheets sync',
+                    'One-time payment, no subscriptions',
+                  ].map((f) => (
+                    <li key={f} className="flex items-start gap-2.5 text-sm text-white">
+                      <FiCheck size={15} className="text-primary-light/60 mt-0.5 shrink-0" />
+                      <span>{f}</span>
+                    </li>
                   ))}
-                </div>
-                <p className="text-neutral-gray mb-6 italic">{testimonial?.content}</p>
-                <div>
-                  <p className="font-semibold text-neutral-dark">
-                    {testimonial?.name}
-                  </p>
-                  <p className="text-sm text-neutral-gray">
-                    {testimonial?.role}, {testimonial?.company}
-                  </p>
-                </div>
-              </Card>
-            ))}
-          </div>
-          {/* Testimonials carousel controls */}
-          <div className="flex items-center justify-center gap-4">
-            <button
-              type="button"
-              onClick={() =>
-                setTestimonialIndex((prev) =>
-                  testimonials.length ? (prev - 1 + testimonials.length) % testimonials.length : 0
-                )
-              }
-              className="p-2 rounded-full border border-neutral-border text-neutral-gray hover:text-primary hover:border-primary transition-colors bg-white"
-              aria-label="Previous testimonial"
-            >
-              <FiChevronLeft size={20} />
-            </button>
-            <div className="flex gap-2">
-              {testimonials.map((_, index) => (
-                <button
-                  key={index}
-                  type="button"
-                  onClick={() => setTestimonialIndex(index)}
-                  className={`w-2.5 h-2.5 rounded-full transition-colors ${
-                    index === testimonialIndex ? 'bg-primary' : 'bg-neutral-border'
-                  }`}
-                  aria-label={`Go to testimonial ${index + 1}`}
-                />
-              ))}
-            </div>
-            <button
-              type="button"
-              onClick={() =>
-                setTestimonialIndex((prev) =>
-                  testimonials.length ? (prev + 1) % testimonials.length : 0
-                )
-              }
-              className="p-2 rounded-full border border-neutral-border text-neutral-gray hover:text-primary hover:border-primary transition-colors bg-white"
-              aria-label="Next testimonial"
-            >
-              <FiChevronRight size={20} />
-            </button>
+                </ul>
+                <Link 
+                  href="/signup?type=pharmacy" 
+                  className="w-full inline-flex items-center justify-center gap-2 rounded-xl font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50 bg-white/10 text-white border border-white/20 px-6 py-3 text-sm hover:bg-white/20 hover:border-white/30"
+                >
+                  Choose Pharmacy Plan
+                </Link>
+              </div>
+            </Reveal>
           </div>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="bg-primary-dark text-white py-8 sm:py-12 overflow-x-hidden w-full">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 w-full">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8 mb-6 sm:mb-8 text-center sm:text-left">
-            <div>
-              <h3 className="text-xl font-bold mb-4 font-display">Medify</h3>
-              <p className="text-white/70">
-                Building medical websites made simple.
-              </p>
+      <footer className="bg-neutral-dark text-white/70 py-12 sm:py-16 overflow-hidden">
+        <div className="max-w-6xl mx-auto px-6">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
+            <div className="flex items-center flex-shrink-0 brightness-0 invert">
+              <div className="relative w-28 h-9 sm:w-36 sm:h-11 flex-shrink-0">
+                <Image
+                  src="/logo.svg"
+                  alt="Medify logo"
+                  fill
+                  className="object-contain"
+                />
+              </div>
             </div>
-            <div>
-              <h4 className="font-semibold mb-4">Product</h4>
-              <ul className="space-y-2 text-white/70">
-                <li>
-                  <Link href="#features" className="hover:text-amber-200 transition-colors">
-                    Features
-                  </Link>
-                </li>
-                <li>
-                  <Link href="#pricing" className="hover:text-amber-200 transition-colors">
-                    Pricing
-                  </Link>
-                </li>
-                <li>
-                  <Link href="#templates" className="hover:text-amber-200 transition-colors">
-                    Templates
-                  </Link>
-                </li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-semibold mb-4">Company</h4>
-              <ul className="space-y-2 text-white/70">
-                <li>About</li>
-                <li>Blog</li>
-                <li>Contact</li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-semibold mb-4">Support</h4>
-              <ul className="space-y-2 text-white/70">
-                <li>Help Center</li>
-                <li>Documentation</li>
-                <li>API</li>
-              </ul>
-            </div>
-          </div>
-          <div className="border-t border-white/20 pt-8 text-center text-white/70">
-            <p>&copy; 2026 Medify. All rights reserved.</p>
+            <p className="text-sm text-center sm:text-left">&copy; 2026 Medify. All rights reserved.</p>
           </div>
         </div>
       </footer>
     </div>
   )
 }
-

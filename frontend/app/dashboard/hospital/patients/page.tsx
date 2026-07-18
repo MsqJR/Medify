@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { PageHeader } from '@/components/dashboard';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { hospitalAdminApi } from '@/lib/hospitalAdminApi';
@@ -419,20 +420,20 @@ export default function HospitalPatientsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-neutral-dark">Patients by Doctor</h1>
-          <p className="mt-1 text-neutral-gray">Patient records grouped by their treating physician.</p>
-        </div>
-        <Button
-          variant="primary"
-          onClick={() => handlePrint()}
-          disabled={loading || doctorGroups.length === 0}
-        >
-          <FiPrinter className="mr-2" />
-          Print All
-        </Button>
-      </div>
+      <PageHeader
+        title="Patients by Doctor"
+        description="Patient records grouped by their treating physician."
+        actions={
+          <Button
+            variant="primary"
+            onClick={() => handlePrint()}
+            disabled={loading || doctorGroups.length === 0}
+          >
+            <FiPrinter className="mr-2" />
+            Print All
+          </Button>
+        }
+      />
 
       {/* Filters */}
       <Card className="p-4">

@@ -3,32 +3,19 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Iterable, List, Set
 
+from django.core.exceptions import ValidationError
 from django.utils import timezone
 
-PLAN_TYPE_BASIC = 'BASIC'
-PLAN_TYPE_STANDARD = 'STANDARD'
-PLAN_TYPE_AI = 'AI'
-PLAN_TYPE_PREMIUM = 'PREMIUM'
-
-SUBSCRIPTION_ACTIVE = 'ACTIVE'
-SUBSCRIPTION_INACTIVE = 'INACTIVE'
-SUBSCRIPTION_EXPIRED = 'EXPIRED'
-SUBSCRIPTION_CANCELLED = 'CANCELLED'
-SUBSCRIPTION_PENDING = 'PENDING'
-
-PLAN_TYPE_CHOICES = (
-    (PLAN_TYPE_BASIC, 'Basic'),
-    (PLAN_TYPE_STANDARD, 'Premium'),
-    (PLAN_TYPE_AI, 'AI'),
-    (PLAN_TYPE_PREMIUM, 'Premium'),
-)
-
-SUBSCRIPTION_STATUS_CHOICES = (
-    (SUBSCRIPTION_ACTIVE, 'Active'),
-    (SUBSCRIPTION_INACTIVE, 'Inactive'),
-    (SUBSCRIPTION_EXPIRED, 'Expired'),
-    (SUBSCRIPTION_CANCELLED, 'Cancelled'),
-    (SUBSCRIPTION_PENDING, 'Pending'),
+from core.constants import (
+    PLAN_TYPE_BASIC,
+    PLAN_TYPE_STANDARD,
+    PLAN_TYPE_AI,
+    PLAN_TYPE_PREMIUM,
+    SUBSCRIPTION_ACTIVE,
+    SUBSCRIPTION_INACTIVE,
+    SUBSCRIPTION_EXPIRED,
+    SUBSCRIPTION_CANCELLED,
+    SUBSCRIPTION_PENDING,
 )
 
 ONE_TIME_FEATURES: Set[str] = {
@@ -155,6 +142,102 @@ def can_publish_hospital(website_setup) -> bool:
     if getattr(website_setup, 'is_paid', False):
         return True
     return False
+
+
+def validate_subscription_transition(instance, attrs):
+    from django.utils import timezone
+
+    subscription_fields = {'plan_type', 'subscription_status', 'subscription_ends_at'}
+    if not subscription_fields.intersection(attrs.keys()):
+        return attrs
+
+    now = timezone.now()
+    current_status = instance.subscription_status
+    current_plan = instance.plan_type
+    current_ends_at = instance.subscription_ends_at
+    current_active = is_subscription_active(instance)
+
+    incoming_status = attrs.get('subscription_status', current_status)
+    incoming_plan = attrs.get('plan_type', current_plan)
+    incoming_ends_at = attrs.get('subscription_ends_at', current_ends_at)
+
+    if current_status == SUBSCRIPTION_ACTIVE and current_ends_at and current_ends_at <= now:
+        current_status = SUBSCRIPTION_EXPIRED
+        current_active = False
+
+    if incoming_status == SUBSCRIPTION_ACTIVE and incoming_ends_at and incoming_ends_at <= now:
+        raise ValidationError({
+            'subscription_ends_at': 'Subscription end date must be in the future.'
+        })
+
+    if incoming_plan != current_plan and incoming_status in {
+        SUBSCRIPTION_CANCELLED, SUBSCRIPTION_INACTIVE, SUBSCRIPTION_EXPIRED,
+    }:
+        raise ValidationError(
+            'Cancel your current plan before subscribing to another plan.'
+        )
+
+    if current_status == SUBSCRIPTION_PENDING:
+        if incoming_status in {SUBSCRIPTION_PENDING, SUBSCRIPTION_ACTIVE}:
+            if incoming_plan != current_plan:
+                raise ValidationError(
+                    'Cancel your current plan before subscribing to another plan.'
+                )
+        elif incoming_status not in {SUBSCRIPTION_CANCELLED, SUBSCRIPTION_INACTIVE}:
+            raise ValidationError(
+                'Cancel your current plan before subscribing to another plan.'
+            )
+
+    if incoming_status == SUBSCRIPTION_PENDING:
+        if current_active:
+            raise ValidationError(
+                'Cancel your current plan before subscribing to another plan.'
+            )
+
+    if current_active:
+        if incoming_status == SUBSCRIPTION_CANCELLED and incoming_plan == current_plan:
+            return attrs
+        if incoming_plan == current_plan:
+            raise ValidationError('You already have an active subscription.')
+        raise ValidationError(
+            'Cancel your current plan before subscribing to another plan.'
+        )
+
+    return attrs
+
+
+def apply_subscription_update(instance, validated_data):
+    from django.utils import timezone
+
+    now = timezone.now()
+    if (
+        instance.subscription_status == SUBSCRIPTION_ACTIVE
+        and instance.subscription_ends_at
+        and instance.subscription_ends_at <= now
+        and 'subscription_status' not in validated_data
+    ):
+        validated_data['subscription_status'] = SUBSCRIPTION_EXPIRED
+
+    if validated_data.get('subscription_status') == SUBSCRIPTION_CANCELLED:
+        validated_data.setdefault('subscription_ends_at', now)
+
+    if 'one_time_features' in validated_data:
+        incoming = validated_data['one_time_features'] or []
+        existing = list(instance.one_time_features or [])
+        merged = list(dict.fromkeys(existing + incoming))
+        validated_data['one_time_features'] = merged
+
+    return validated_data
+
+
+def check_customization_allowed(website_setup) -> tuple[bool, str]:
+    plan_access = get_allowed_features(website_setup)
+    if not plan_access.is_active or plan_access.plan_type not in {PLAN_TYPE_STANDARD, PLAN_TYPE_PREMIUM}:
+        return False, (
+            'Website customization requires an active Premium plan. '
+            'Please upgrade your subscription to save theme or logo changes.'
+        )
+    return True, ''
 
 
 def required_theme_features(theme_settings: dict | None) -> Set[str]:

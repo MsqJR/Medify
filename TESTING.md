@@ -50,7 +50,7 @@ You can run specific applications, test files, classes, or individual test metho
 
 ## 2. QA / Concurrency End-to-End Test Suite
 
-The QA script (`backend/tests/qa_test.py`) runs functional, concurrency, and validation tests against a live, running backend server.
+The QA script (`backend/hospitals/tests/test_qa_e2e.py`) runs functional, concurrency, and validation tests against a live, running backend server.
 
 ### Prerequisites
 Ensure your local backend development server is running in the background:
@@ -62,7 +62,7 @@ python manage.py runserver
 ### Execution
 Run the QA script directly:
 ```bash
-python tests/qa_test.py
+python hospitals/tests/test_qa_e2e.py
 ```
 
 ### What it Tests

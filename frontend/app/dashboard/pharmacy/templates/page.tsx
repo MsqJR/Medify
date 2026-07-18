@@ -5,6 +5,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { FiCheck, FiEye, FiLayers, FiLoader, FiMessageSquare, FiShield, FiXCircle } from 'react-icons/fi'
 
+import { PageHeader } from '@/components/dashboard'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { Modal } from '@/components/ui/Modal'
@@ -242,22 +243,22 @@ export default function PharmacyTemplatesPage() {
 
   return (
     <div className="space-y-6">
-      <section className="overflow-hidden rounded-3xl border border-primary/20 bg-gradient-to-br from-primary-light via-white to-neutral-light p-6">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-neutral-dark">Template Selection</h1>
-            <p className="text-neutral-gray mt-1">Choose a template, purchase once, activate anytime, and cancel if needed.</p>
-          </div>
+      <PageHeader
+        title="Template Selection"
+        description="Choose a template, purchase once, activate anytime, and cancel if needed."
+        variant="gradient"
+        actions={
           <div className="rounded-2xl border border-primary/20 bg-white/80 px-4 py-3 text-right">
             <p className="text-xs font-semibold uppercase tracking-wide text-neutral-gray">Active Template</p>
             <p className="text-sm font-bold text-neutral-dark">{selectedTemplate?.name || 'None selected'}</p>
           </div>
-        </div>
-        <div className="mt-4 grid gap-2 text-xs sm:grid-cols-2">
+        }
+      >
+        <div className="grid gap-2 text-xs sm:grid-cols-2">
           <p className="inline-flex items-center gap-2 rounded-lg border border-primary/20 bg-white/80 px-3 py-2 text-neutral-dark"><FiShield className="text-primary" /> Purchase records persist in backend</p>
           <p className="inline-flex items-center gap-2 rounded-lg border border-primary/20 bg-white/80 px-3 py-2 text-neutral-dark"><FiCheck className="text-primary" /> Activation is one-click for purchased templates</p>
         </div>
-      </section>
+      </PageHeader>
 
       <Card className="p-4">
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">

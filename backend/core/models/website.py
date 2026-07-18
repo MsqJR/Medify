@@ -1,6 +1,6 @@
 from django.db import models
 from .user import User
-from core.services.subscription import PLAN_TYPE_CHOICES, SUBSCRIPTION_STATUS_CHOICES
+from core.constants import PLAN_TYPE_CHOICES, SUBSCRIPTION_STATUS_CHOICES
 import uuid
 
 

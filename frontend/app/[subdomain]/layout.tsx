@@ -1,10 +1,12 @@
 import React from 'react';
 import Link from 'next/link';
+import { FiZap } from 'react-icons/fi';
 import HospitalChatWidget from '@/components/hospital/HospitalChatWidget';
 import { getHospitalProfile, getHospitalDepartments } from '@/lib/hospitalApi';
 import { getSubdomainPublicInfo } from '@/lib/subdomainApi';
 import { normalizeLogoUrl } from '@/lib/storage';
 import PharmacySubdomainLayout from './PharmacySubdomainLayout';
+import { BrandLogo } from '@/components/pharmacy/BrandLogo';
 
 interface LayoutProps {
     children: React.ReactNode;
@@ -28,6 +30,8 @@ export default async function HospitalLayout({ children, params }: LayoutProps) 
             </PharmacySubdomainLayout>
         );
     }
+
+    const about = subdomainInfo?.business_info?.about || null;
 
     const [profile, departments] = await Promise.all([
         profilePromise,
@@ -224,19 +228,13 @@ export default async function HospitalLayout({ children, params }: LayoutProps) 
                     to { opacity: 1; transform: translateY(0); }
                 }
 
-                @keyframes float-slow {
-                    0%, 100% { transform: translateY(0); }
-                    50% { transform: translateY(-8px); }
-                }
-
                 .animate-fade-up { animation: fade-up 0.7s ease both; }
                 .delay-1 { animation-delay: 120ms; }
                 .delay-2 { animation-delay: 220ms; }
                 .delay-3 { animation-delay: 320ms; }
-                .animate-float { animation: float-slow 6s ease-in-out infinite; }
 
                 @media (prefers-reduced-motion: reduce) {
-                    .animate-fade-up, .animate-float { animation: none !important; }
+                    .animate-fade-up { animation: none !important; }
                 }
             `}} />
 
@@ -245,7 +243,7 @@ export default async function HospitalLayout({ children, params }: LayoutProps) 
                     <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-2 text-xs sm:px-6">
                         <div className="flex flex-wrap items-center gap-3">
                             <span className="inline-flex items-center gap-2 rounded-full px-3 py-1 text-[11px] font-bold uppercase tracking-[0.2em]" style={{ background: '#dc2626', color: '#ffffff' }}>
-                                ⚡ 24/7 Emergency
+                                <FiZap size={14} className="inline" /> 24/7 Emergency
                             </span>
                             <span className="font-bold text-white">Call {emergencyNumber}</span>
                         </div>
@@ -259,13 +257,26 @@ export default async function HospitalLayout({ children, params }: LayoutProps) 
                     <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6">
                         <Link href="/" className="flex items-center gap-3">
                             {logoUrl ? (
-                                <img src={logoUrl} alt="Logo" className="h-8 object-contain" />
+                                <div className="h-8 w-24 relative">
+                                    <BrandLogo
+                                        src={logoUrl}
+                                        alt="Logo"
+                                        fallbackText="+"
+                                        imageClassName="h-full w-full object-contain"
+                                        fallbackClassName="inline-flex h-8 w-8 items-center justify-center rounded-full bg-blue-100 text-blue-700 font-bold"
+                                    />
+                                </div>
                             ) : (
                                 <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-blue-100 text-blue-700 font-bold">
                                     +
                                 </span>
                             )}
-                            <span className="text-lg font-bold tracking-tight">{businessInfo?.name || profile?.name || resolvedParams.subdomain}</span>
+                            <div className="flex flex-col leading-tight">
+                                <span className="text-lg font-bold tracking-tight">{businessInfo?.name || profile?.name || resolvedParams.subdomain}</span>
+                                {about && (
+                                    <span className="text-xs text-slate-500">{about}</span>
+                                )}
+                            </div>
                         </Link>
 
                         <nav className="hidden items-center gap-7 text-sm font-medium text-slate-600 md:flex">
@@ -332,7 +343,7 @@ export default async function HospitalLayout({ children, params }: LayoutProps) 
                     </div>
                     {/* Bottom copyright bar */}
                     <div className="border-t border-slate-800 bg-slate-950/40 py-6 text-center text-xs text-slate-500">
-                        <p>© {new Date().getFullYear()} {businessInfo?.name || profile?.name || resolvedParams.subdomain}. All rights reserved by medify.com.</p>
+                        <p>&copy; {new Date().getFullYear()} {businessInfo?.name || profile?.name || resolvedParams.subdomain}. All rights reserved by medify.com.</p>
                     </div>
                 </footer>
             </div>

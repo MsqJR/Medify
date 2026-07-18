@@ -14,6 +14,7 @@ import {
   FiX,
 } from 'react-icons/fi'
 
+import { PageHeader } from '@/components/dashboard'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { Input } from '@/components/ui/Input'
@@ -21,7 +22,6 @@ import { Modal } from '@/components/ui/Modal'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { Textarea } from '@/components/ui/Textarea'
 import { useToast } from '@/components/ui/ToastProvider'
-import { ProductImage } from '@/components/pharmacy/ProductImage'
 import {
   pharmacyProductsApi,
   type BulkUploadFailure,
@@ -31,73 +31,15 @@ import {
 } from '@/lib/pharmacy'
 import { persistProductSnapshot, startPharmacyProductPolling } from '@/lib/pharmacySheetSync'
 import { setPublicSiteItem, setScopedItem } from '@/lib/storage'
-import { FiPackage, FiAlertTriangle } from 'react-icons/fi'
-
-type ConfirmDialog = {
-  open: boolean
-  title: string
-  message: string
-  confirmLabel?: string
-  danger?: boolean
-  onConfirm: () => void
-}
-
-type SheetPreviewRow = {
-  name: string
-  price: number
-  category: string
-  description: string
-  stock?: number
-}
-
-type ProductForm = {
-  id?: string
-  name: string
-  price: string
-  category: string
-  description: string
-  stock: string
-  image: File | null
-  imagePreview: string
-  image_url: string
-}
-
-const emptyForm: ProductForm = {
-  name: '',
-  price: '',
-  category: '',
-  description: '',
-  stock: '0',
-  image: null,
-  imagePreview: '',
-  image_url: '',
-}
-
-const priceLabel = (value: string) => {
-  const numeric = Number(value)
-  if (!Number.isFinite(numeric)) return value
-  return numeric.toFixed(2)
-}
-
-const normalizeKeyToken = (value: string) => value.toLowerCase().replace(/[^a-z0-9]+/g, '')
-
-const getFailureCell = (data: Record<string, string>, aliases: string[]) => {
-  for (const alias of aliases) {
-    const direct = data[alias]
-    if (typeof direct === 'string' && direct.trim()) {
-      return direct.trim()
-    }
-  }
-
-  const normalizedAliases = aliases.map((alias) => normalizeKeyToken(alias))
-  for (const [key, value] of Object.entries(data || {})) {
-    if (normalizedAliases.includes(normalizeKeyToken(key)) && value?.trim()) {
-      return value.trim()
-    }
-  }
-
-  return '-'
-}
+import {
+  type ConfirmDialog,
+  type SheetPreviewRow,
+  type ProductForm,
+  emptyForm,
+  priceLabel,
+  getFailureCell,
+} from '@/lib/pharmacy/productsUtils'
+import { ProductsConfirmDialog, ProductsProductAvatar } from '@/components/pharmacy/products'
 
 export default function PharmacyProductsPage() {
   const router = useRouter()
@@ -236,29 +178,6 @@ export default function PharmacyProductsPage() {
     () => products.filter((product) => product.stock > 0 && product.stock <= 4).length,
     [products],
   )
-
-  const getProductImage = (product: PharmacyProduct) => {
-    const nextImage = product.image_url || product.image || ''
-    return nextImage.trim()
-  }
-
-  const ProductAvatar = ({ product }: { product: PharmacyProduct }) => {
-    const imageUrl = getProductImage(product)
-
-    return imageUrl ? (
-      <ProductImage
-        src={imageUrl}
-        alt={product.name}
-        className="h-12 w-12 rounded-xl object-cover"
-        fallbackClassName="grid h-12 w-12 place-items-center rounded-xl bg-primary/10 text-primary"
-        fallbackLabel={product.name}
-      />
-    ) : (
-      <div className="grid h-12 w-12 place-items-center rounded-xl bg-primary/10 text-primary" aria-hidden="true">
-        <FiPackage className="text-lg" />
-      </div>
-    )
-  }
 
   const resetForm = () => {
     setForm(emptyForm)
@@ -507,72 +426,21 @@ export default function PharmacyProductsPage() {
     })
   }
 
-  /* ── Custom confirm dialog component ─────────────────────────────────── */
-  const ConfirmDialogUI = confirmDialog.open ? (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      {/* Backdrop */}
-      <div
-        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
-        onClick={closeConfirm}
-      />
-      {/* Modal card */}
-      <div className="relative w-full max-w-sm rounded-2xl bg-white shadow-2xl border border-neutral-100 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-        {/* Top accent bar */}
-        <div className={`h-1 w-full ${confirmDialog.danger ? 'bg-gradient-to-r from-red-400 to-rose-500' : 'bg-gradient-to-r from-primary to-primary/70'}`} />
-
-        <div className="p-6">
-          {/* Icon + title */}
-          <div className="flex items-start gap-4">
-            <div className={`flex-shrink-0 flex h-11 w-11 items-center justify-center rounded-full ${
-              confirmDialog.danger ? 'bg-red-50 text-red-500' : 'bg-primary-light text-primary'
-            }`}>
-              <FiAlertTriangle size={22} />
-            </div>
-            <div className="flex-1 min-w-0">
-              <h3 className="text-base font-semibold text-neutral-dark leading-tight">{confirmDialog.title}</h3>
-              <p className="mt-1.5 text-sm text-neutral-gray leading-relaxed">{confirmDialog.message}</p>
-            </div>
-          </div>
-
-          {/* Actions */}
-          <div className="mt-6 flex gap-3 justify-end">
-            <button
-              onClick={closeConfirm}
-              className="px-4 py-2 rounded-xl text-sm font-medium text-neutral-600 bg-neutral-100 hover:bg-neutral-200 transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={() => { closeConfirm(); confirmDialog.onConfirm() }}
-              className={`px-4 py-2 rounded-xl text-sm font-semibold text-white transition-all ${
-                confirmDialog.danger
-                  ? 'bg-gradient-to-r from-red-500 to-rose-500 hover:from-red-600 hover:to-rose-600 shadow-sm shadow-red-200'
-                  : 'bg-gradient-to-r from-primary to-primary/80 hover:opacity-90'
-              }`}
-            >
-              {confirmDialog.confirmLabel || 'Confirm'}
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  ) : null
-
   return (
     <div className="space-y-6">
-      {ConfirmDialogUI}
-      <section className="overflow-hidden rounded-3xl border border-primary/20 bg-gradient-to-br from-primary-light via-white to-neutral-light p-6">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-neutral-dark">Product Management</h1>
-            <p className="text-neutral-gray mt-1">Sync from Google Sheet, add products manually, and manage your catalog.</p>
-          </div>
+      <ProductsConfirmDialog dialog={confirmDialog} onClose={closeConfirm} />
+      <PageHeader
+        title="Product Management"
+        description="Sync from Google Sheet, add products manually, and manage your catalog."
+        variant="gradient"
+        actions={
           <div className="rounded-2xl border border-primary/20 bg-white/80 px-4 py-3 text-right">
             <p className="text-xs font-semibold uppercase tracking-wide text-neutral-gray">Visible Results</p>
             <p className="text-lg font-bold text-neutral-dark">{filteredProducts.length}</p>
           </div>
-        </div>
-        <div className="mt-4 grid gap-3 sm:grid-cols-4">
+        }
+      >
+        <div className="grid gap-3 sm:grid-cols-4">
           <div className="rounded-2xl border border-primary/20 bg-white/80 px-4 py-3">
             <p className="text-xs font-semibold uppercase tracking-wide text-neutral-gray">Total Products</p>
             <p className="mt-1 text-lg font-bold text-neutral-dark">{totalProducts}</p>
@@ -590,7 +458,7 @@ export default function PharmacyProductsPage() {
             <p className="mt-1 text-lg font-bold text-red-700">{outOfStockCount}</p>
           </div>
         </div>
-      </section>
+      </PageHeader>
 
       <Card className="p-6">
         <h2 className="text-xl font-semibold text-neutral-dark">Google Sheet Sync</h2>
@@ -857,7 +725,7 @@ export default function PharmacyProductsPage() {
                       {filteredProducts.map((product) => (
                         <tr key={product.id} className="transition-colors hover:bg-neutral-light/60">
                           <td className="px-3 py-3 align-middle">
-                            <ProductAvatar product={product} />
+                            <ProductsProductAvatar product={product} />
                           </td>
                           <td className="px-3 py-3 align-middle">
                             <div className="font-semibold text-neutral-dark">{product.name}</div>

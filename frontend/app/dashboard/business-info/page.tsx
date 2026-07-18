@@ -13,6 +13,7 @@ import { businessInfoApi } from '@/lib/api'
 import { useToast } from '@/components/ui/ToastProvider'
 import { pharmacyApi } from '@/lib/pharmacy'
 import { HospitalPhotosSection } from '@/components/hospital/HospitalPhotosSection'
+import { DashboardPageWrapper, PageHeader } from '@/components/dashboard'
 import dynamic from 'next/dynamic'
 
 const LocationMapPicker = dynamic(() => import('@/components/LocationMapPicker'), {
@@ -446,11 +447,11 @@ export default function BusinessInfoPage() {
   ]
 
   return (
-    <div className="space-y-4 sm:space-y-6 w-full max-w-full overflow-x-hidden">
-      <div>
-        <h1 className="text-2xl sm:text-3xl font-bold text-neutral-dark mb-2">Business Information</h1>
-        <p className="text-sm sm:text-base text-neutral-gray">Add your business details to complete your website</p>
-      </div>
+    <DashboardPageWrapper>
+      <PageHeader
+        title="Business Information"
+        description="Add your business details to complete your website"
+      />
 
       <form onSubmit={handleSubmit}>
         <div className="space-y-6">
@@ -701,7 +702,7 @@ export default function BusinessInfoPage() {
           )}
         </div>
       </form>
-    </div>
+    </DashboardPageWrapper>
   )
 }
 

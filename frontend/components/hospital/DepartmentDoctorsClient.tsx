@@ -2,6 +2,7 @@
 
 import React, { useMemo, useState } from 'react';
 import Link from 'next/link';
+import { Stethoscope } from 'lucide-react';
 import {
   FiChevronLeft,
   FiCalendar,
@@ -272,7 +273,7 @@ export default function DepartmentDoctorsClient({ department, doctors }: Props) 
               borderRadius: 'var(--hospital-radius)',
             }}
           >
-            <span className="text-5xl mb-4">🩺</span>
+            <Stethoscope className="inline-block w-12 h-12 mb-4" style={{ color: 'var(--hospital-text-muted)' }} />
             <h3 className="text-lg font-bold" style={{ color: 'var(--hospital-text)' }}>No Doctors Available</h3>
             <p className="text-sm mt-1" style={{ color: 'var(--hospital-text-muted)' }}>
               There are currently no active doctors assigned to this department.

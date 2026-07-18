@@ -9,10 +9,10 @@ import { AIChatbot } from '@/components/pharmacy/AIChatbot'
 import { BrandLogo } from '@/components/pharmacy/BrandLogo'
 import { ProductImage } from '@/components/pharmacy/ProductImage'
 import { useSearchParams } from 'next/navigation'
-import { getSiteItem, setSiteItem, removeSiteItem, getStoredUser, setSiteOwnerId } from '@/lib/storage'
+import { getSiteItem, setSiteItem, removeSiteItem, getStoredUser } from '@/lib/storage'
 import { addPharmacyInboxMessage } from '@/lib/pharmacyInbox'
 import { getStoredPharmacyThemeSettings, isSectionEnabled } from '@/lib/pharmacyTheme'
-import { resolveOpenHours } from '@/lib/pharmacyTemplateRuntime'
+import { safeJsonParse, buildTemplatePath, syncSiteOwner, resolveOpenHours } from '@/lib/pharmacyTemplateRuntime'
 
 type PharmacySetup = {
   phone?: string
@@ -59,29 +59,12 @@ type CartItem = {
   quantity: number
 }
 
-function safeJsonParse<T>(value: string | null): T | null {
-  if (!value) return null
-  try {
-    return JSON.parse(value) as T
-  } catch {
-    return null
-  }
-}
-
 function PharmacyTemplate1PageContent() {
   const searchParams = useSearchParams()
   const isDemo = searchParams?.get('demo') === '1' || searchParams?.get('demo') === 'true'
   const ownerId = searchParams?.get('owner') || ''
   const cartKey = isDemo ? 'pharmacy_cart_demo' : 'pharmacy_cart'
-  const withDemo = (path: string) => {
-    const [base, hash] = path.split('#')
-    const [pathname, query = ''] = base.split('?')
-    const params = new URLSearchParams(query)
-    if (isDemo) params.set('demo', '1')
-    if (ownerId) params.set('owner', ownerId)
-    const nextQuery = params.toString()
-    return `${pathname}${nextQuery ? `?${nextQuery}` : ''}${hash ? `#${hash}` : ''}`
-  }
+  const withDemo = (path: string) => buildTemplatePath(path, { isDemo, ownerId })
 
   const [pharmacySetup, setPharmacySetup] = useState<PharmacySetup | null>(null)
   const [businessInfo, setBusinessInfo] = useState<BusinessInfo | null>(null)
@@ -90,15 +73,13 @@ function PharmacyTemplate1PageContent() {
 
 
   useEffect(() => {
-    if (ownerId) {
-      setSiteOwnerId(ownerId)
-    }
+    syncSiteOwner(ownerId)
   }, [ownerId])
 
   useEffect(() => {
     const user = getStoredUser()
-    if (ownerId) setSiteOwnerId(ownerId)
-    else if (user?.id) setSiteOwnerId(user.id)
+    if (ownerId) syncSiteOwner(ownerId)
+    else if (user?.id) syncSiteOwner(user.id)
     
     const localSetup = getSiteItem('pharmacySetup')
     const localInfo = getSiteItem('businessInfo')
@@ -255,16 +236,16 @@ function PharmacyTemplate1PageContent() {
       <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-neutral-border/50 shadow-sm">
         <div className="mx-auto max-w-6xl px-4 py-4 flex items-center justify-between gap-3">
           <Link href={withDemo("/templates/pharmacy/1")} className="flex items-center gap-3 group">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-primary-dark flex items-center justify-center overflow-hidden shadow-lg group-hover:scale-105 transition-transform">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-primary-dark flex items-center justify-center overflow-hidden shadow-lg group-hover:scale-105 transition-transform p-1">
               {isDemo ? (
-                <Image src="/mod logo.png" alt="Logo" width={48} height={48} className="object-cover" />
+                <Image src="/mod logo.png" alt="Logo" width={44} height={44} className="object-contain" />
               ) : (
                 <BrandLogo
                   src={brand.logo}
                   alt={`${brand.name || 'Pharmacy'} logo`}
                   fallbackText={brand.name || 'P'}
-                  imageClassName="w-full h-full object-cover"
-                  fallbackClassName="w-full h-full bg-primary-dark flex items-center justify-center text-white font-bold"
+                  imageClassName="w-full h-full object-contain"
+                  fallbackClassName="w-full h-full bg-primary-dark flex items-center justify-center text-white font-bold rounded-lg"
                 />
               )}
             </div>
@@ -630,7 +611,7 @@ function PharmacyTemplate1PageContent() {
 
       <footer className="border-t border-neutral-border bg-gradient-to-b from-white to-neutral-light/30">
         <div className="mx-auto max-w-6xl px-4 py-8 text-sm text-neutral-gray flex flex-col sm:flex-row gap-2 sm:items-center sm:justify-between">
-          <div>© {new Date().getFullYear()} {brand.name || (isDemo ? 'Modern Pharmacy' : 'Pharmacy')}. All rights reserved.</div>
+          <div>&copy; {new Date().getFullYear()} {brand.name || (isDemo ? 'Modern Pharmacy' : 'Pharmacy')}. All rights reserved.</div>
           <div className="opacity-80">This website done by Medify</div>
         </div>
       </footer>

@@ -4,19 +4,11 @@ import React, { useEffect, useState } from 'react'
 import { SubdomainPublicInfo } from '@/lib/subdomainApi'
 import { WhatsAppButton } from '@/components/pharmacy/WhatsAppButton'
 import { getSiteItem } from '@/lib/storage'
+import { safeJsonParse } from '@/lib/pharmacyTemplateRuntime'
 
 interface PharmacySubdomainLayoutProps {
   children: React.ReactNode
   subdomainInfo: SubdomainPublicInfo
-}
-
-function safeJsonParse<T>(value: string | null): T | null {
-  if (!value) return null
-  try {
-    return JSON.parse(value) as T
-  } catch {
-    return null
-  }
 }
 
 export default function PharmacySubdomainLayout({

@@ -302,11 +302,11 @@ export function HospitalGalleryBlock({ subdomain, photos: initialPhotos }: Hospi
           </div>
 
           {/* ── Horizontal scroll strip ── */}
-          <div className="relative">
+          <div className="relative -mx-4 sm:-mx-6 lg:mx-0">
             {/* Left fade gradient */}
             {canScrollLeft && (
               <div
-                className="absolute left-0 top-0 bottom-0 w-16 z-10 pointer-events-none"
+                className="hidden sm:block absolute left-0 top-0 bottom-0 w-16 z-10 pointer-events-none"
                 style={{
                   background: `linear-gradient(to right, var(--hospital-surface-alt), transparent)`,
                 }}
@@ -316,7 +316,7 @@ export function HospitalGalleryBlock({ subdomain, photos: initialPhotos }: Hospi
             {/* Right fade gradient */}
             {canScrollRight && (
               <div
-                className="absolute right-0 top-0 bottom-0 w-16 z-10 pointer-events-none"
+                className="hidden sm:block absolute right-0 top-0 bottom-0 w-16 z-10 pointer-events-none"
                 style={{
                   background: `linear-gradient(to left, var(--hospital-surface-alt), transparent)`,
                 }}
@@ -326,7 +326,7 @@ export function HospitalGalleryBlock({ subdomain, photos: initialPhotos }: Hospi
             <div
               ref={scrollRef}
               data-gallery-strip
-              className="flex gap-6 sm:gap-8 overflow-x-auto pb-4"
+              className="flex gap-6 sm:gap-8 overflow-x-auto pb-4 px-4 sm:px-6 lg:px-0"
               style={{
                 scrollSnapType: 'x mandatory',
                 scrollbarWidth: 'none',

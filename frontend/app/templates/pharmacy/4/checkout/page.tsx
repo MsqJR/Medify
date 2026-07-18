@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import React, { Suspense, useCallback, useEffect, useMemo, useState } from 'react'
+import React, { Suspense, useMemo } from 'react'
 import { useSearchParams } from 'next/navigation'
 import {
   FiArrowLeft,
@@ -18,34 +18,9 @@ import {
   calculateSubtotal,
   formatPrice,
   getDemoState,
-  loadBrandInfo,
-  readCart,
-  submitTemplateOrder,
-  syncSiteOwner,
   type TemplateBrand,
-  type TemplateCartItem,
-  writeCart,
 } from '@/lib/pharmacyTemplateRuntime'
-
-type CheckoutForm = {
-  fullName: string
-  email: string
-  phone: string
-  address: string
-  city: string
-  state: string
-  zipCode: string
-  deliveryMethod: 'delivery' | 'pickup'
-  paymentMethod: 'cash' | 'card'
-  notes: string
-}
-
-type CardForm = {
-  holder: string
-  number: string
-  expiry: string
-  cvc: string
-}
+import { usePharmacyCheckout } from '@/lib/usePharmacyCheckout'
 
 const DEMO_BRAND: TemplateBrand = {
   name: 'AuroraCare Pharmacy',
@@ -56,156 +31,39 @@ const DEMO_BRAND: TemplateBrand = {
   openHours: 'Mon-Sun 08:00-22:00',
 }
 
-const INITIAL_FORM: CheckoutForm = {
-  fullName: '',
-  email: '',
-  phone: '',
-  address: '',
-  city: '',
-  state: '',
-  zipCode: '',
-  deliveryMethod: 'delivery',
-  paymentMethod: 'cash',
-  notes: '',
-}
-
-const INITIAL_CARD: CardForm = {
-  holder: '',
-  number: '',
-  expiry: '',
-  cvc: '',
-}
-
-function digitsOnly(value: string): string {
-  return value.replace(/\D+/g, '')
-}
-
-function formatCardNumber(value: string): string {
-  const compact = digitsOnly(value).slice(0, 19)
-  return compact.replace(/(.{4})/g, '$1 ').trim()
-}
-
-function formatExpiry(value: string): string {
-  const compact = digitsOnly(value).slice(0, 4)
-  if (compact.length <= 2) return compact
-  return `${compact.slice(0, 2)}/${compact.slice(2)}`
-}
-
-function isValidCardForm(card: CardForm): boolean {
-  const numberLen = digitsOnly(card.number).length
-  const cvcLen = digitsOnly(card.cvc).length
-  const expiryMatch = /^(\d{2})\/(\d{2})$/.exec(card.expiry)
-  if (!expiryMatch) return false
-
-  const month = Number(expiryMatch[1])
-  return (
-    card.holder.trim().length >= 2 &&
-    numberLen >= 13 &&
-    numberLen <= 19 &&
-    month >= 1 &&
-    month <= 12 &&
-    cvcLen >= 3 &&
-    cvcLen <= 4
-  )
-}
-
 function TemplateFourCheckoutContent() {
   const searchParams = useSearchParams()
   const demoState = useMemo(() => getDemoState(searchParams), [searchParams])
   const cartKey = demoState.isDemo ? 'pharmacy4_cart_demo' : 'pharmacy4_cart'
 
-  const withDemo = useCallback(
-    (path: string) => buildTemplatePath(path, demoState),
-    [demoState],
-  )
+  const withDemo = (path: string) => buildTemplatePath(path, demoState)
 
-  const [brand, setBrand] = useState<TemplateBrand>(DEMO_BRAND)
-  const [cart, setCart] = useState<TemplateCartItem[]>([])
-  const [form, setForm] = useState<CheckoutForm>(INITIAL_FORM)
-  const [card, setCard] = useState<CardForm>(INITIAL_CARD)
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [orderNumber, setOrderNumber] = useState('')
-  const [orderPlaced, setOrderPlaced] = useState(false)
-  const [formError, setFormError] = useState('')
-
-  useEffect(() => {
-    syncSiteOwner(demoState.ownerId)
-  }, [demoState.ownerId])
-
-  useEffect(() => {
-    setBrand(loadBrandInfo(demoState.isDemo, DEMO_BRAND))
-  }, [demoState.isDemo])
-
-  useEffect(() => {
-    setCart(readCart(cartKey, demoState.isDemo))
-  }, [cartKey, demoState.isDemo])
-
-  useEffect(() => {
-    writeCart(cartKey, demoState.isDemo, cart)
-  }, [cart, cartKey, demoState.isDemo])
-
-  const subtotal = useMemo(() => calculateSubtotal(cart), [cart])
-  const deliveryFee = form.deliveryMethod === 'delivery' ? 4.5 : 0
-  const total = subtotal + deliveryFee
-
-  const updateQty = (productId: string, delta: number) => {
-    setCart((prev) => {
-      const current = prev.find((item) => item.product.id === productId)
-      if (!current) return prev
-
-      const nextQty = current.quantity + delta
-      if (nextQty <= 0) return prev.filter((item) => item.product.id !== productId)
-      if (delta > 0 && current.product.stock !== undefined && nextQty > current.product.stock) {
-        alert(`Sorry, only ${current.product.stock} units of ${current.product.name} are available in stock.`)
-        return prev
-      }
-
-      return prev.map((item) =>
-        item.product.id === productId ? { ...item, quantity: nextQty } : item,
-      )
-    })
-  }
-
-  const handlePlaceOrder = async (event: React.FormEvent) => {
-    event.preventDefault()
-    setFormError('')
-
-    if (form.paymentMethod === 'card' && !isValidCardForm(card)) {
-      setFormError('Please complete valid card details before placing this order.')
-      return
-    }
-
-    if (cart.length === 0) {
-      setFormError('Your cart is empty.')
-      return
-    }
-
-    setIsSubmitting(true)
-
-    try {
-      const result = await submitTemplateOrder({
-        isDemo: demoState.isDemo,
-        orderNamespace: 'pharmacy4_order',
-        cart,
-        total,
-        deliveryFee,
-        deliveryInfo: form,
-        payment:
-          form.paymentMethod === 'card'
-            ? { method: 'card', last4: digitsOnly(card.number).slice(-4) }
-            : { method: 'cash' },
-      })
-
-      setOrderNumber(result.orderNumber)
-      setOrderPlaced(true)
-      setCart([])
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Could not place order. Please try again.'
-      setFormError(message)
-    } finally {
-      setIsSubmitting(false)
-    }
-  }
+  const {
+    brand,
+    cart,
+    form,
+    card,
+    isSubmitting,
+    orderPlaced,
+    orderNumber,
+    error: formError,
+    subtotal,
+    deliveryFee,
+    total,
+    setForm,
+    setCard,
+    updateQty,
+    handleSubmit: handlePlaceOrder,
+    formatCardNumber,
+    formatExpiry,
+    digitsOnly,
+  } = usePharmacyCheckout({
+    demoState,
+    cartKey,
+    orderNamespace: 'pharmacy4_order',
+    demoBrand: DEMO_BRAND,
+    deliveryFeeValue: 4.5,
+  })
 
   if (orderPlaced) {
     return (

@@ -193,7 +193,7 @@ export default function ContactBlock({
                 backgroundSize: '32px 32px',
               }}
             />
-            <span className="relative text-4xl select-none">📍</span>
+            <FiMapPin className="relative text-4xl" />
             <p
               className="relative text-sm font-medium"
               style={{ color: 'var(--hospital-text-muted)' }}

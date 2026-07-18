@@ -1,7 +1,7 @@
-﻿'use client'
+'use client'
 
 import Link from 'next/link'
-import React, { Suspense, useCallback, useEffect, useMemo, useState } from 'react'
+import React, { Suspense, useMemo } from 'react'
 import { useSearchParams } from 'next/navigation'
 import {
   FiChevronRight,
@@ -14,21 +14,13 @@ import {
 } from 'react-icons/fi'
 
 import {
-  buildTemplatePath,
-  calculateSubtotal,
-  countCartItems,
   getDemoState,
-  loadBrandInfo,
-  loadTemplateProducts,
-  parsePriceToNumber,
-  readCart,
-  syncSiteOwner,
   type TemplateBrand,
-  type TemplateCartItem,
   type TemplateProduct,
-  writeCart,
 } from '@/lib/pharmacyTemplateRuntime'
+import { usePharmacyMedications, type SortValue } from '@/lib/usePharmacyMedications'
 import { ProductImage } from '@/components/pharmacy/ProductImage'
+import { BrandLogo } from '@/components/pharmacy/BrandLogo'
 
 const DEMO_BRAND: TemplateBrand = {
   name: 'AuroraCare Pharmacy',
@@ -48,127 +40,53 @@ const DEMO_PRODUCTS: TemplateProduct[] = [
   { id: 'm-6', name: 'Pulse BP Home Monitor', category: 'Devices', description: 'Compact smart monitor for home use.', price: '$46.70', inStock: true, stock: 7, imageUrl: '/logo.png' },
 ]
 
-type SortValue = 'recommended' | 'price_low' | 'price_high' | 'name'
-
 function TemplateFourMedicationsContent() {
   const searchParams = useSearchParams()
   const demoState = useMemo(() => getDemoState(searchParams), [searchParams])
   const cartKey = demoState.isDemo ? 'pharmacy4_cart_demo' : 'pharmacy4_cart'
 
-  const withDemo = useCallback(
-    (path: string) => buildTemplatePath(path, demoState),
-    [demoState],
-  )
-
-  const [brand, setBrand] = useState<TemplateBrand>(DEMO_BRAND)
-  const [products, setProducts] = useState<TemplateProduct[]>([])
-  const [cart, setCart] = useState<TemplateCartItem[]>([])
-  const [search, setSearch] = useState('')
-  const [category, setCategory] = useState('All')
-  const [sortBy, setSortBy] = useState<SortValue>('recommended')
-
-  useEffect(() => {
-    syncSiteOwner(demoState.ownerId)
-  }, [demoState.ownerId])
-
-  useEffect(() => {
-    setBrand(loadBrandInfo(demoState.isDemo, DEMO_BRAND))
-
-    const load = async () => {
-      const loaded = await loadTemplateProducts(demoState.isDemo, DEMO_PRODUCTS)
-      setProducts(loaded)
-    }
-
-    void load()
-  }, [demoState.isDemo])
-
-  useEffect(() => {
-    setCart(readCart(cartKey, demoState.isDemo))
-  }, [cartKey, demoState.isDemo])
-
-  useEffect(() => {
-    writeCart(cartKey, demoState.isDemo, cart)
-  }, [cart, cartKey, demoState.isDemo])
-
-  const categories = useMemo(() => {
-    const unique = new Set(products.map((item) => item.category).filter(Boolean))
-    return ['All', ...Array.from(unique).sort()]
-  }, [products])
-
-  const filteredProducts = useMemo(() => {
-    const query = search.trim().toLowerCase()
-
-    let next = products.filter((item) => {
-      const matchesCategory = category === 'All' || item.category === category
-      const matchesSearch =
-        !query ||
-        item.name.toLowerCase().includes(query) ||
-        item.category.toLowerCase().includes(query) ||
-        (item.description || '').toLowerCase().includes(query)
-
-      return matchesCategory && matchesSearch
-    })
-
-    if (sortBy === 'name') {
-      next = [...next].sort((a, b) => a.name.localeCompare(b.name))
-    }
-
-    if (sortBy === 'price_low') {
-      next = [...next].sort((a, b) => parsePriceToNumber(a.price) - parsePriceToNumber(b.price))
-    }
-
-    if (sortBy === 'price_high') {
-      next = [...next].sort((a, b) => parsePriceToNumber(b.price) - parsePriceToNumber(a.price))
-    }
-
-    if (sortBy === 'recommended') {
-      next = [...next].sort((a, b) => (b.stock || 0) - (a.stock || 0))
-    }
-
-    return next
-  }, [category, products, search, sortBy])
-
-  const cartCount = useMemo(() => countCartItems(cart), [cart])
-  const subtotal = useMemo(() => calculateSubtotal(cart), [cart])
-
-  const updateQty = (productId: string, delta: number) => {
-    setCart((prev) => {
-      const current = prev.find((item) => item.product.id === productId)
-      if (!current) return prev
-
-      const nextQty = current.quantity + delta
-      if (nextQty <= 0) return prev.filter((item) => item.product.id !== productId)
-      if ((current.product.stock || 0) < nextQty) return prev
-
-      return prev.map((item) =>
-        item.product.id === productId ? { ...item, quantity: nextQty } : item,
-      )
-    })
-  }
-
-  const addToCart = (product: TemplateProduct) => {
-    if (!product.inStock || (product.stock || 0) <= 0) return
-
-    setCart((prev) => {
-      const existing = prev.find((item) => item.product.id === product.id)
-      if (existing) {
-        if ((product.stock || 0) <= existing.quantity) return prev
-        return prev.map((item) =>
-          item.product.id === product.id
-            ? { ...item, quantity: item.quantity + 1 }
-            : item,
-        )
-      }
-      return [...prev, { product, quantity: 1 }]
-    })
-  }
+  const {
+    brand,
+    cart,
+    search,
+    setSearch,
+    category,
+    setCategory,
+    sortBy,
+    setSortBy,
+    withDemo,
+    categories,
+    filteredProducts,
+    cartCount,
+    subtotal,
+    addToCart,
+    updateQty,
+  } = usePharmacyMedications({
+    demoState,
+    cartKey,
+    demoBrand: DEMO_BRAND,
+    demoProducts: DEMO_PRODUCTS,
+    initialSortBy: 'recommended' as SortValue,
+  })
 
   return (
     <div className="min-h-screen overflow-x-hidden bg-[radial-gradient(circle_at_top,_#e9fff8_0%,_#f4fbff_45%,_#ffffff_100%)] text-slate-900">
       <header className="sticky top-0 z-40 border-b border-white/70 bg-white/85 backdrop-blur-xl">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6">
           <Link href={withDemo('/templates/pharmacy/4')} className="inline-flex items-center gap-2 text-sm font-semibold text-slate-800">
-            <span className="grid h-9 w-9 place-items-center rounded-xl bg-primary text-white"><FiSun /></span>
+            <div className="relative h-9 w-9 flex-shrink-0 overflow-hidden rounded-xl bg-primary text-white flex items-center justify-center p-0.5 shadow-sm">
+              {!demoState.isDemo && brand.logo ? (
+                <BrandLogo
+                  src={brand.logo}
+                  alt={`${brand.name || 'Pharmacy'} logo`}
+                  fallbackText={brand.name || 'P'}
+                  imageClassName="h-full w-full object-contain"
+                  fallbackClassName="h-full w-full bg-primary flex items-center justify-center text-white font-bold rounded-lg text-xs"
+                />
+              ) : (
+                <FiSun className="w-4 h-4" />
+              )}
+            </div>
             {brand.name || 'AuroraCare Pharmacy'}
           </Link>
 

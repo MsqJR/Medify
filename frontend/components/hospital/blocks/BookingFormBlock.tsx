@@ -16,7 +16,9 @@ import {
   FiCheckCircle,
   FiAlertCircle,
   FiArrowRight,
+  FiPhone,
 } from 'react-icons/fi';
+import { Stethoscope } from 'lucide-react';
 
 interface BookingFormBlockProps {
   settings: {
@@ -616,7 +618,7 @@ export default function BookingFormBlock({ settings, subdomain }: BookingFormBlo
                   </div>
                 ) : filteredDoctors.length === 0 ? (
                   <div className="rounded-xl py-10 text-center" style={{ backgroundColor: 'var(--hospital-surface-alt)' }}>
-                    <p className="text-2xl">👨‍⚕️</p>
+                    <Stethoscope className="inline-block w-8 h-8" style={{ color: 'var(--hospital-text-muted)' }} />
                     <p className="mt-2 font-semibold" style={{ color: 'var(--hospital-text)' }}>No doctors found</p>
                     <p className="mt-1 text-sm" style={{ color: 'var(--hospital-text-muted)' }}>Try a different search term</p>
                   </div>
@@ -1011,7 +1013,7 @@ export default function BookingFormBlock({ settings, subdomain }: BookingFormBlo
                 className="mt-3 flex items-center gap-2 text-sm font-bold"
                 style={{ color: 'var(--hospital-btn-primary)' }}
               >
-                📞 Call Reception <FiArrowRight size={13} />
+                <FiPhone className="inline-block" size={13} /> Call Reception <FiArrowRight size={13} />
               </a>
             </div>
 

@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { PageHeader } from '@/components/dashboard'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Toggle } from '@/components/ui/Toggle'
@@ -138,14 +139,7 @@ export default function PharmacyAIAssistantPage() {
 
   return (
     <div className="space-y-6 w-full max-w-full overflow-x-hidden">
-      <div>
-        <h1 className="text-3xl font-bold text-neutral-dark mb-2">
-          AI Assistant for Customers
-        </h1>
-        <p className="text-neutral-gray">
-          Configure the AI chatbot that helps customers on your website
-        </p>
-      </div>
+      <PageHeader title="AI Assistant for Customers" description="Configure the AI chatbot that helps customers on your website" />
 
       {!hasAIChatbot && (
         <Card className="p-8 text-center">

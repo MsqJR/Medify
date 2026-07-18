@@ -18,12 +18,24 @@ const config: Config = {
           white: '#FFFFFF',
           light: '#F7F9FC',
           border: '#DCE3EC',
-          gray: '#6C7A8A',
+          gray: '#556575',
           dark: '#1A1A1A',
         },
-        success: '#28C76F',
-        warning: '#FFB020',
-        error: '#FF4C4C',
+        success: {
+          DEFAULT: '#28C76F',
+          light: 'var(--success-light, #ECFDF5)',
+          border: 'var(--success-border, #A7F3D0)',
+        },
+        warning: {
+          DEFAULT: '#FFB020',
+          light: 'var(--warning-light, #FFF7ED)',
+          border: 'var(--warning-border, #FED7AA)',
+        },
+        error: {
+          DEFAULT: '#FF4C4C',
+          light: 'var(--error-light, #FEF2F2)',
+          border: 'var(--error-border, #FECACA)',
+        },
         ai: '#7C3AED',
       },
       fontFamily: {

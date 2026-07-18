@@ -220,13 +220,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ userType, isOpen = true, onClo
         } md:translate-x-0`}>
         <div className="p-4 sm:p-6 border-b border-neutral-border flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2 sm:gap-3" onClick={onClose}>
-            <div className="h-12 w-12 sm:h-14 sm:w-14 flex-shrink-0 rounded-full overflow-hidden border border-primary/20 bg-white">
+            <div className="h-12 w-12 sm:h-14 sm:w-14 flex-shrink-0 rounded-xl overflow-hidden border border-primary/20 bg-white p-1">
               <BrandLogo
                 src={brandLogo || '/mod logo.png'}
                 alt={`${brandName} logo`}
                 fallbackText={brandName}
-                imageClassName="h-full w-full object-cover"
-                fallbackClassName="h-full w-full bg-primary flex items-center justify-center text-white font-semibold text-sm"
+                imageClassName="h-full w-full object-contain"
+                fallbackClassName="h-full w-full bg-primary flex items-center justify-center text-white font-semibold text-sm rounded-lg"
               />
             </div>
             <div className="flex flex-col leading-tight">
@@ -236,7 +236,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ userType, isOpen = true, onClo
           </Link>
           <button
             onClick={onClose}
-            className="md:hidden p-2 text-neutral-gray hover:text-neutral-dark"
+            className="md:hidden p-3 text-neutral-gray hover:text-neutral-dark"
             aria-label="Close sidebar menu"
           >
             <LuX size={24} />

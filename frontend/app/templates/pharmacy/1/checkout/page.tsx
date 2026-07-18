@@ -8,8 +8,18 @@ import { FiClock, FiMapPin, FiPhoneCall, FiShoppingCart, FiCheckCircle, FiArrowL
 import { AIChatbot } from '@/components/pharmacy/AIChatbot'
 import { BrandLogo } from '@/components/pharmacy/BrandLogo'
 import { useSearchParams } from 'next/navigation'
-import { submitTemplateOrder } from '@/lib/pharmacyTemplateRuntime'
-import { getSiteItem, setSiteItem, removeSiteItem, getStoredUser, getSiteOwnerId, getPrefixForUserId, getItemForUser, setItemForUser, setSiteOwnerId } from '@/lib/storage'
+import {
+  safeJsonParse,
+  buildTemplatePath,
+  syncSiteOwner,
+  loadBrandInfo,
+  readCart,
+  writeCart,
+  submitTemplateOrder,
+  type TemplateBrand,
+} from '@/lib/pharmacyTemplateRuntime'
+import { digitsOnly, formatCardNumber, formatExpiry, formatCvc, validateCardForm } from '@/lib/cardHelpers'
+import { getSiteItem, setSiteItem, removeSiteItem } from '@/lib/storage'
 
 type Product = {
   id: string
@@ -42,29 +52,22 @@ type DeliveryInfo = {
 type CardInfo = {
   cardholderName: string
   cardNumber: string
-  expiry: string // MM/YY
+  expiry: string
   cvc: string
-}
-
-function safeJsonParse<T>(value: string | null): T | null {
-  if (!value) return null
-  try {
-    return JSON.parse(value) as T
-  } catch {
-    return null
-  }
-}
-
-type BusinessInfo = {
-  name?: string
-  logo?: string
-  contactPhone?: string
-  address?: string
 }
 
 type PharmacySetup = {
   phone?: string
   address?: string
+}
+
+const DEMO_BRAND: TemplateBrand = {
+  name: 'Modern Pharmacy',
+  logo: '/mod logo.png',
+  about: '',
+  phone: '+1 (555) 123-4567',
+  address: '123 Main Street, City',
+  openHours: '',
 }
 
 function CheckoutPageContent() {
@@ -73,32 +76,18 @@ function CheckoutPageContent() {
   const isDemo = searchParams?.get('demo') === '1' || searchParams?.get('demo') === 'true'
   const ownerId = searchParams?.get('owner') || ''
   const cartKey = isDemo ? 'pharmacy_cart_demo' : 'pharmacy_cart'
-  const withDemo = (path: string) => {
-    const [base, hash] = path.split('#')
-    const [pathname, query = ''] = base.split('?')
-    const params = new URLSearchParams(query)
-    if (isDemo) params.set('demo', '1')
-    if (ownerId) params.set('owner', ownerId)
-    const nextQuery = params.toString()
-    return `${pathname}${nextQuery ? `?${nextQuery}` : ''}${hash ? `#${hash}` : ''}`
-  }
+  const withDemo = (path: string) => buildTemplatePath(path, { isDemo, ownerId })
+  const demoState = { isDemo, ownerId }
 
   useEffect(() => {
-    if (ownerId) {
-      setSiteOwnerId(ownerId)
-    }
+    syncSiteOwner(ownerId)
   }, [ownerId])
 
   const [cart, setCart] = useState<CartItem[]>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [orderPlaced, setOrderPlaced] = useState(false)
   const [orderNumber, setOrderNumber] = useState<string>('')
-  const [brand, setBrand] = useState<{ name: string; logo: string | null; phone: string; address: string }>({
-    name: isDemo ? 'Modern Pharmacy' : '',
-    logo: isDemo ? '/mod logo.png' : null,
-    phone: isDemo ? '+1 (555) 123-4567' : '',
-    address: isDemo ? '123 Main Street, City' : '',
-  })
+  const [brand, setBrand] = useState<TemplateBrand>(DEMO_BRAND)
 
   const [formData, setFormData] = useState<DeliveryInfo>({
     fullName: '',
@@ -121,37 +110,13 @@ function CheckoutPageContent() {
   })
   const [paymentError, setPaymentError] = useState('')
 
-  const digitsOnly = (value: string) => value.replace(/\D+/g, '')
-
-  const formatCardNumber = (value: string) => {
-    const digits = digitsOnly(value).slice(0, 19) // allow up to 19 digits (Amex/others)
-    return digits.replace(/(.{4})/g, '$1 ').trim()
-  }
-
-  const formatExpiry = (value: string) => {
-    const digits = digitsOnly(value).slice(0, 4)
-    if (digits.length <= 2) return digits
-    return `${digits.slice(0, 2)}/${digits.slice(2)}`
-  }
-
-  const formatCvc = (value: string) => digitsOnly(value).slice(0, 4)
-
   useEffect(() => {
-    if (isDemo) return
-    const businessInfo = safeJsonParse<BusinessInfo>(getSiteItem('businessInfo'))
-    const setup = safeJsonParse<PharmacySetup>(getSiteItem('pharmacySetup'))
-    setBrand({
-      name: businessInfo?.name?.trim() || '',
-      logo: businessInfo?.logo || null,
-      phone: businessInfo?.contactPhone || setup?.phone || '',
-      address: businessInfo?.address || setup?.address || '',
-    })
+    setBrand(loadBrandInfo(isDemo, DEMO_BRAND))
   }, [isDemo])
 
   useEffect(() => {
-    const raw = isDemo ? localStorage.getItem(cartKey) : getSiteItem(cartKey)
-    const savedCart = safeJsonParse<CartItem[]>(raw)
-    if (savedCart && savedCart.length > 0) {
+    const savedCart = readCart(cartKey, isDemo)
+    if (savedCart.length > 0) {
       setCart(savedCart)
     } else {
       router.push(withDemo('/templates/pharmacy/1/medications'))
@@ -218,22 +183,8 @@ function CheckoutPageContent() {
     e.preventDefault()
     setPaymentError('')
 
-    // Basic card validation (UI-only; no real payment processing here)
     if (formData.paymentMethod === 'card') {
-      const cardNumberDigits = digitsOnly(cardInfo.cardNumber)
-      const expiry = cardInfo.expiry.trim()
-      const cvc = digitsOnly(cardInfo.cvc)
-
-      const expiryMatch = /^(\d{2})\/(\d{2})$/.exec(expiry)
-      const month = expiryMatch ? Number(expiryMatch[1]) : 0
-      const year2 = expiryMatch ? Number(expiryMatch[2]) : -1
-      const isExpiryValid = Boolean(expiryMatch) && month >= 1 && month <= 12 && year2 >= 0
-
-      const isCardNumberValid = cardNumberDigits.length >= 13 && cardNumberDigits.length <= 19
-      const isCvcValid = cvc.length >= 3 && cvc.length <= 4
-      const isNameValid = cardInfo.cardholderName.trim().length >= 2
-
-      if (!isNameValid || !isCardNumberValid || !isExpiryValid || !isCvcValid) {
+      if (!validateCardForm(cardInfo)) {
         setPaymentError('Please enter valid card details (name, card number, expiry MM/YY, and CVC).')
         return
       }
@@ -342,16 +293,16 @@ function CheckoutPageContent() {
       <header className="bg-white/95 backdrop-blur-md border-b border-neutral-border/50 shadow-sm">
         <div className="mx-auto max-w-7xl px-4 py-4 flex items-center justify-between gap-3">
           <Link href={withDemo("/templates/pharmacy/1")} className="flex items-center gap-3 group">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-primary-dark flex items-center justify-center overflow-hidden shadow-lg group-hover:scale-105 transition-transform">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-primary-dark flex items-center justify-center overflow-hidden shadow-lg group-hover:scale-105 transition-transform p-1">
               {isDemo ? (
-                <Image src="/mod logo.png" alt="Logo" width={48} height={48} className="object-cover" />
+                <Image src="/mod logo.png" alt="Logo" width={44} height={44} className="object-contain" />
               ) : (
                 <BrandLogo
                   src={brand.logo}
                   alt={`${brand.name || 'Pharmacy'} logo`}
                   fallbackText={brand.name || 'P'}
-                  imageClassName="w-full h-full object-cover"
-                  fallbackClassName="w-full h-full bg-primary-dark flex items-center justify-center text-white font-bold"
+                  imageClassName="w-full h-full object-contain"
+                  fallbackClassName="w-full h-full bg-primary-dark flex items-center justify-center text-white font-bold rounded-lg"
                 />
               )}
             </div>

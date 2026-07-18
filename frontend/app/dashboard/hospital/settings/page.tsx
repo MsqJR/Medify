@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { PageHeader } from '@/components/dashboard';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -103,10 +104,7 @@ export default function HospitalSettingsPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-neutral-dark">Settings</h1>
-        <p className="mt-1 text-neutral-gray">Manage hospital details and system preferences.</p>
-      </div>
+      <PageHeader title="Settings" description="Manage hospital details and system preferences." />
 
       <div className="flex flex-wrap gap-2">
         {([

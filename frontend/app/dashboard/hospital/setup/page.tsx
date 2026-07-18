@@ -2,6 +2,7 @@
 
 import React, { useState, useMemo, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { PageHeader } from '@/components/dashboard'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Toggle } from '@/components/ui/Toggle'
@@ -294,18 +295,11 @@ function HospitalSetupContent() {
 
   return (
     <div className="space-y-6">
-      <section className="overflow-hidden rounded-3xl border border-primary/20 bg-gradient-to-br from-primary-light via-white to-neutral-light p-6">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-neutral-dark">Hospital Website Setup</h1>
-            <p className="text-neutral-gray mt-1">
-              Select the features you want on your hospital website. You can manage your doctors and departments from the{' '}
-              <a href="/dashboard/hospital/doctors" className="text-primary font-semibold underline hover:text-primary-dark transition-colors">
-                Doctors tab
-              </a>
-              .
-            </p>
-          </div>
+      <PageHeader
+        title="Hospital Website Setup"
+        description={<>Select the features you want on your hospital website. You can manage your doctors and departments from the{' '}<a href="/dashboard/hospital/doctors" className="text-primary font-semibold underline hover:text-primary-dark transition-colors">Doctors tab</a>.</>}
+        variant="gradient"
+        actions={
           <div className="flex items-center gap-2">
             {!subLoading && isActive && (
               <div className={`shrink-0 flex items-center gap-1.5 rounded-xl border px-4 py-2 text-sm font-semibold ${PLAN_BADGE_CLASSES[planType]}`}>
@@ -320,8 +314,9 @@ function HospitalSetupContent() {
               </div>
             )}
           </div>
-        </div>
-        <div className="mt-4 grid gap-2 text-xs sm:grid-cols-3">
+        }
+      >
+        <div className="grid gap-2 text-xs sm:grid-cols-3">
           <p className="inline-flex items-center gap-2 rounded-lg border border-primary/20 bg-white/80 px-3 py-2 text-neutral-dark">
             <FiShield className="text-primary" /> Safe publish workflow
           </p>
@@ -332,7 +327,7 @@ function HospitalSetupContent() {
             <FiCheckCircle className="text-primary" /> Progress saved continuously
           </p>
         </div>
-      </section>
+      </PageHeader>
 
       <form onSubmit={handleSubmit}>
         <div className="space-y-6">

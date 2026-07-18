@@ -184,10 +184,13 @@ class HospitalModuleTests(TestCase):
         # Clear outbox
         mail.outbox = []
         
-        # Change status to CONFIRMED and execute on_commit callbacks
-        with self.captureOnCommitCallbacks(execute=True):
-            appointment.status = Appointment.Status.CONFIRMED
-            appointment.save()
+        # Change status to CONFIRMED
+        appointment.status = Appointment.Status.CONFIRMED
+        appointment.save()
+        
+        # Send confirmation email via the service layer
+        from hospitals.tasks import send_appointment_confirmation_email
+        send_appointment_confirmation_email(appointment.id)
         
         # Verify confirmation_email_sent is True
         appointment.refresh_from_db()

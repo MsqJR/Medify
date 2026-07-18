@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react'
 import { reviewApi } from '@/lib/api'
+import { PageHeader } from '@/components/dashboard'
 import { Card } from '@/components/ui/Card'
 import { LuMessageSquare, LuCalendar, LuUser, LuStar, LuBuilding2, LuClock, LuHeartHandshake, LuShieldCheck, LuSparkles } from 'react-icons/lu'
 import { SubscriptionProvider, useSubscription } from '@/contexts/SubscriptionContext'
@@ -101,27 +102,19 @@ function HospitalReviewsContent() {
 
   return (
     <div className="space-y-6 md:space-y-8 max-w-7xl mx-auto w-full pb-10">
-      {/* Header Section */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-6 rounded-2xl shadow-sm border border-neutral-border">
-        <div className="flex items-center gap-4">
-          <div className="p-3 bg-primary/10 text-primary rounded-xl">
-            <LuMessageSquare size={28} />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold text-neutral-dark">Patient Reviews</h1>
-            <p className="text-neutral-gray text-sm mt-1">
-              Detailed performance metrics and qualitative feedback from completed appointments.
-            </p>
-          </div>
+      <PageHeader
+        title="Patient Reviews"
+        description="Detailed performance metrics and qualitative feedback from completed appointments."
+        icon={<LuMessageSquare size={28} className="text-primary" />}
+        variant="gradient"
+      />
+      
+      {isPremium && (
+        <div className="bg-neutral-light px-4 py-2 rounded-lg border border-neutral-border flex flex-col items-center justify-center min-w-[120px]">
+          <span className="text-xs font-semibold text-neutral-gray uppercase tracking-wider">Total Reviews</span>
+          <span className="text-2xl font-bold text-primary">{reviews.length}</span>
         </div>
-        
-        {isPremium && (
-          <div className="bg-neutral-light px-4 py-2 rounded-lg border border-neutral-border flex flex-col items-center justify-center min-w-[120px]">
-            <span className="text-xs font-semibold text-neutral-gray uppercase tracking-wider">Total Reviews</span>
-            <span className="text-2xl font-bold text-primary">{reviews.length}</span>
-          </div>
-        )}
-      </div>
+      )}
 
       {!isPremium ? (
         <div className="bg-blue-50 border border-blue-200 rounded-2xl p-8 text-center shadow-sm max-w-2xl mx-auto mt-10 flex flex-col items-center">

@@ -1,83 +1,65 @@
 # AGENTS.md — Medify
 
-Full-stack medical website builder: **Next.js 16** (App Router, Turbopack) frontend + **Django 4.2 / DRF 3.14** backend.
+Full-stack medical website builder: **Next.js 16** (App Router, Turbopack) frontend + **Django 4.2 / DRF 3.15** backend.
 
 ## Commands
 
 ```bash
 # Frontend (cd frontend)
-npm run dev          # dev server :3000
-npm run build && npm start   # prod build + serve
-npm run lint         # next lint
-npx tsc --noEmit     # typecheck (no dedicated script)
+npm run dev              # dev server :3000
+npm run build && npm start
+npm run lint             # next lint
+npx tsc --noEmit         # typecheck
+npm test                 # jest (jsdom)
 
-# Backend (cd backend)
-python manage.py runserver        # :8000
-python manage.py test              # all tests
-python manage.py test core.tests   # single app
+# Backend (cd backend; source ~/.venv/bin/activate first)
+python manage.py runserver                                # :8000
+python manage.py test                                     # all tests
+python manage.py test core.tests                          # single app
 python manage.py test pharmacies.tests.test_views.TestClass.test_method
-flake8 .                           # lint (E501 ignored, see setup.cfg)
-pyright                            # typecheck
+flake8 .                                                  # lint (E501/E221/E203 ignored per setup.cfg)
 python manage.py makemigrations && python manage.py migrate
+python manage.py send_review_emails                       # standalone management command
 ```
 
 ## Architecture
 
-- **Monorepo**: `frontend/` (Next.js), `backend/` (Django), `myenv/` (ignored Python venv).
-- **API**: `NEXT_PUBLIC_API_URL` (default `http://localhost:8000/api`). JWT auth (access + refresh). Backend uses `rest_framework_simplejwt` with 7d access / 30d refresh, rotate+blacklist.
-- **Multi-tenancy**: Frontend middleware rewrites `*.localhost:3000` → `app/[subdomain]/`. Backend CORS allows subdomain regexes.
-- **Business types**: `hospital` (CRM features) and `pharmacy` (e-commerce + product catalog).
+- **Monorepo**: `frontend/` (Next.js), `backend/` (Django), `myenv/` (Python venv).
+- **API prefix**: `http://localhost:8000/api`.
+- **JWT auth**: 30min access token, 7d refresh token, rotate+blacklist. Bearer header.
+- **Multi-tenancy**: Frontend `middleware.ts` rewrites `*.localhost:3000` → `app/[subdomain]/`. Backend CORS regex allows `*.localhost:3000`.
+- **Business types**: `hospital` (CRM) and `pharmacy` (e-commerce + product catalog).
 
-### Backend apps (`backend/`)
+### Backend URL routing
 
-| App | Responsibility |
+| Prefix | App |
 |---|---|
-| `core/` | Shared models (User, WebsiteSetup, BusinessInfo), auth, chatbot API, subdomain routing |
-| `hospitals/` | Departments, doctors, schedules, appointments, public/pages API |
-| `pharmacies/` | Products, orders, CSV bulk upload, **Google Sheets bidirectional sync** |
-| `rag_model/` | RAG service for medical chatbot (sentence-transformers, FAISS, Gemini) |
+| `/api/auth/*`, `/api/business-info/*`, `/api/chatbot/`, `/api/website-setups/*` | `core/` |
+| `/api/pharmacy/*` | `pharmacies/` |
+| `/api/hospital/*` | `hospitals/` |
+| `/api/rag/ask/` | `rag_model/` (standalone RAG endpoint) |
 
-The old `api/` app has been fully migrated into `core/`, `hospitals/`, `pharmacies/`.
+### Key gotchas
 
-### Frontend layout (`frontend/`)
-
-- `app/[subdomain]/` — public tenant website pages
-- `app/dashboard/` — authenticated user dashboard
-- `app/templates/` — pharmacy template pages
-- `components/ui/` — reusable (Button, Input, Modal, Card, etc.)
-- `lib/` — API clients (`api.ts`, `auth.ts`, `pharmacy*.ts`, etc.)
-- `contexts/SubscriptionContext.tsx` — subscription state
-- Path alias `@/*` → `./*`
-
-## Key workflows
-
-- **Pharmacy templates**: `/templates/pharmacy/1`–`/6`. Purchase/activate/cancel persisted in backend. Owner + visitor preview mirrors in local storage.
-- **Pharmacy product sync**: Google Sheets API (service account). Share sheet with service account email as Editor. Config: `GOOGLE_SERVICE_ACCOUNT_FILE` or `GOOGLE_SERVICE_ACCOUNT_JSON`.
-- **AI Chatbot**: Chatbot API at `/api/chatbot/` with RAG. Config: `HF_MEDICAL_MODEL_ID` (Phi-3-mini), `GEMINI_API_KEY`, HuggingFace token.
-- **Auth flow**: signup → login → JWT → `business-info`, `website-setups`, product/pharmacy endpoints. Full password reset + account deletion implemented.
+- **No APScheduler**: Confirmation/review emails are NOT automatic. Run `python manage.py send_review_emails` via cron.
+- **Google Sheets sync**: Bidirectional. Reads from sheet on list/connect, pushes after bulk upload. Share sheet with service account email as Editor. Config: `GOOGLE_SERVICE_ACCOUNT_FILE` or `GOOGLE_SERVICE_ACCOUNT_JSON`.
+- **AI Chatbot**: Two endpoints — `/api/chatbot/` (business-aware, all types) and `/api/rag/ask/` (raw RAG, pharmacy only). Config: `HF_MEDICAL_MODEL_ID`, `GEMINI_API_KEY`.
+- **Auth flow**: signup → login → JWT → `business-info`, `website-setups`, then product/pharmacy endpoints. Password reset + account deletion in `core/views/auth.py`.
 
 ## Testing quirks
 
-- No frontend test framework installed.
-- Backend tests use Django's test runner: `python manage.py test`.
-- `backend/tests/qa_test.py` is an end-to-end QA script that requires the dev server running (hits `localhost:8000`).
-- Standard library stubs (`backend/tests/test.py`, `test_csv_import.py`) exist but may be unmaintained.
+- Backend uses Django test runner (`python manage.py test`). **No pytest**.
+- `hospitals/tests/test_qa_e2e.py` requires the dev server running (`localhost:8000`).
+- Standard library stubs (`backend/tests/test.py`, `test_csv_import.py`) exist but are unmaintained.
+- Frontend tests in `frontend/__tests__/` run via `npm test` (jest + jsdom).
 
 ## Env
 
-- **Frontend** `.env`: `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY`
-- **Backend** `.env`: `SECRET_KEY`, `DEBUG`, `DB_ENGINE` (sqlite/postgresql), `FRONTEND_URL`, `HF_MEDICAL_MODEL_ID`, `HUGGINGFACE_API_TOKEN`, `GEMINI_API_KEY`, Google Sheets service account config.
+See `backend/.env.example` and `frontend/.env.example`. Database: SQLite by default (`db.sqlite3`); set `DB_ENGINE=postgresql` for PostgreSQL.
 
-Database: SQLite by default. Switch to PostgreSQL by setting `DB_ENGINE=postgresql` and DB_* vars.
+## Stale files to ignore
 
-## Existing instruction files
-
-- `backend/.Agents/AGENTS.md` — stale (pre-migration `api/` structure), keep for historical reference only.
-- `backend/.Agents/MIGRATION_PLAN.md` — migration was already completed.
-- `backend/pharmacies/PHARMACY_GUIDE.md` — detailed pharmacy API usage.
-- `backend/pharmacies/IMPLEMENTATION_SUMMARY.md` — pharmacy feature summary.
-
-<!-- SPECKIT START -->
-For additional context about technologies to be used, project structure,
-shell commands, and other important information, read the current plan
-<!-- SPECKIT END -->
+- `backend/.Agents/AGENTS.md` — pre-migration `api/` structure, not current.
+- `backend/.Agents/MIGRATION_PLAN.md` — migration already completed.
+- `backend/pharmacies/PHARMACY_GUIDE.md` and `IMPLEMENTATION_SUMMARY.md` — no longer present; pharmacy API details are in the source code.
+- `backend/AGENTS.md` — speckit placeholder only.

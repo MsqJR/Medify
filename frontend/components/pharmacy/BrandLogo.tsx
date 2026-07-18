@@ -1,7 +1,7 @@
 'use client'
 
-import React, { useEffect, useMemo, useState } from 'react'
-
+import React, { useState } from 'react'
+import Image from 'next/image'
 import { normalizeLogoUrl } from '@/lib/storage'
 
 type BrandLogoProps = {
@@ -12,6 +12,9 @@ type BrandLogoProps = {
   fallbackClassName?: string
 }
 
+const isNextImageCompatible = (url: string) =>
+  url.startsWith('/') || url.startsWith('http:') || url.startsWith('https:')
+
 export function BrandLogo({
   src,
   alt,
@@ -19,12 +22,8 @@ export function BrandLogo({
   imageClassName = 'w-full h-full object-cover',
   fallbackClassName = 'w-full h-full bg-neutral-dark text-white flex items-center justify-center font-bold',
 }: BrandLogoProps) {
-  const normalizedSrc = useMemo(() => normalizeLogoUrl(src), [src])
+  const normalizedSrc = normalizeLogoUrl(src)
   const [hasImageError, setHasImageError] = useState(false)
-
-  useEffect(() => {
-    setHasImageError(false)
-  }, [normalizedSrc])
 
   const fallbackLetter = (fallbackText || 'P').charAt(0).toUpperCase() || 'P'
 
@@ -32,9 +31,31 @@ export function BrandLogo({
     return <div className={fallbackClassName}>{fallbackLetter}</div>
   }
 
-  // eslint-disable-next-line @next/next/no-img-element
+  const isContain = imageClassName.includes('object-contain')
+  const objectFitClass = isContain ? 'object-contain' : 'object-cover'
+
+  if (isNextImageCompatible(normalizedSrc)) {
+    return (
+      <div className={`relative overflow-hidden ${imageClassName}`}>
+        <Image
+          key={normalizedSrc}
+          src={normalizedSrc}
+          alt={alt}
+          fill
+          sizes="(max-width: 768px) 100px, 200px"
+          className={objectFitClass}
+          onError={() => setHasImageError(true)}
+          priority
+        />
+      </div>
+    )
+  }
+
+  // data: and blob: URIs — must use native <img>
   return (
+    // eslint-disable-next-line @next/next/no-img-element
     <img
+      key={normalizedSrc}
       src={normalizedSrc}
       alt={alt}
       className={imageClassName}

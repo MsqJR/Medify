@@ -10,8 +10,7 @@ from rest_framework.views import APIView
 
 from core.models import ChatConversation, ChatMessage, TemplateAISettings, WebsiteSetup
 from core.serializers import ChatConversationSerializer, ChatbotRequestSerializer
-from core.services.chatbot import ChatbotServiceError, MedicalChatbotService
-from rag_model.services.rag_service import ask_rag
+from core.services.chatbot import ChatbotCoordinatorService, ChatbotServiceError
 
 
 class ChatbotAPIView(APIView):
@@ -99,36 +98,15 @@ class ChatbotAPIView(APIView):
 
         history = conversation.messages.exclude(id=user_message.id).order_by('created_at')
 
-        # If this tenant is a pharmacy, prefer RAG-based answers (evidence-grounded)
-        chatbot_response = None
         try:
-            if getattr(website_setup.user, 'business_type', '') == 'pharmacy':
-                rag_result = ask_rag(data['message'])
-                # construct a lightweight ChatbotResponse-compatible object
-                class _R:
-                    pass
-
-                _r = _R()
-                _r.answer = rag_result.get('answer')
-                _r.follow_up_questions = []
-                _r.possible_conditions = []
-                _r.recommended_specialties = []
-                _r.guidance = []
-                _r.urgency = 'routine'
-                _r.seek_emergency_care = False
-                _r.confidence_note = f"retrieval_confidence={rag_result.get('confidence_score', 0):.2f}"
-                _r.disclaimer = ai_settings.disclaimer
-                _r.raw_model_output = ''
-                chatbot_response = _r
-            else:
-                chatbot_response = MedicalChatbotService.generate_response(
-                    ai_settings=ai_settings,
-                    history=history,
-                    user_message=data['message'],
-                    patient_profile=data.get('patient_profile'),
-                )
+            chatbot_response = ChatbotCoordinatorService.generate_response(
+                website_setup=website_setup,
+                history=history,
+                user_message=data['message'],
+                patient_profile=data.get('patient_profile'),
+            )
         except ChatbotServiceError as exc:
-            chatbot_response = MedicalChatbotService.generate_fallback_response(
+            chatbot_response = ChatbotCoordinatorService.generate_fallback_response(
                 ai_settings=ai_settings,
                 user_message=data['message'],
                 reason=str(exc),

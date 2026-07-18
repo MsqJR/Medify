@@ -7,7 +7,8 @@ import { FiArrowLeft, FiMinus, FiPlus, FiShoppingCart, FiPackage } from 'react-i
 import { BrandLogo } from '@/components/pharmacy/BrandLogo'
 import { ProductImage } from '@/components/pharmacy/ProductImage'
 import { normalizeRenderableProductImageUrl } from '@/lib/productImage'
-import { getSiteItem, setSiteItem, setSiteOwnerId } from '@/lib/storage'
+import { getSiteItem, setSiteItem } from '@/lib/storage'
+import { safeJsonParse, buildTemplatePath, syncSiteOwner, readCart, writeCart } from '@/lib/pharmacyTemplateRuntime'
 
 type Product = {
   id: string
@@ -27,15 +28,6 @@ type BusinessInfo = {
   logo?: string
 }
 
-function safeJsonParse<T>(value: string | null): T | null {
-  if (!value) return null
-  try {
-    return JSON.parse(value) as T
-  } catch {
-    return null
-  }
-}
-
 function ProductDetailsContent() {
   const params = useParams()
   const searchParams = useSearchParams()
@@ -53,20 +45,10 @@ function ProductDetailsContent() {
   const [addedFeedback, setAddedFeedback] = useState(false)
   const [cartWarning, setCartWarning] = useState('')
 
-  const withDemo = (path: string) => {
-    const [base, hash] = path.split('#')
-    const [pathname, query = ''] = base.split('?')
-    const params = new URLSearchParams(query)
-    if (isDemo) params.set('demo', '1')
-    if (ownerId) params.set('owner', ownerId)
-    const nextQuery = params.toString()
-    return `${pathname}${nextQuery ? `?${nextQuery}` : ''}${hash ? `#${hash}` : ''}`
-  }
+  const withDemo = (path: string) => buildTemplatePath(path, { isDemo, ownerId })
 
   useEffect(() => {
-    if (ownerId) {
-      setSiteOwnerId(ownerId)
-    }
+    syncSiteOwner(ownerId)
   }, [ownerId])
 
   // Load business info
@@ -81,9 +63,7 @@ function ProductDetailsContent() {
 
   // Load cart
   useEffect(() => {
-    const raw = isDemo ? localStorage.getItem(cartKey) : getSiteItem(cartKey)
-    const saved = safeJsonParse<CartItem[]>(raw)
-    setCart(saved || [])
+    setCart(readCart(cartKey, isDemo))
   }, [cartKey, isDemo])
 
   // Load product

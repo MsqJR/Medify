@@ -13,6 +13,7 @@ import {
   FiShield,
 } from 'react-icons/fi'
 
+import { PageHeader } from '@/components/dashboard'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { ProgressBar } from '@/components/ui/ProgressBar'
@@ -92,23 +93,23 @@ export default function PharmacySetupPage() {
 
   return (
     <div className="space-y-6">
-      <section className="overflow-hidden rounded-3xl border border-primary/20 bg-gradient-to-br from-primary-light via-white to-neutral-light p-6">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-neutral-dark">Create Pharmacy Website</h1>
-            <p className="text-neutral-gray mt-1">Follow this launch checklist to build and publish your pharmacy storefront.</p>
-          </div>
+      <PageHeader
+        title="Create Pharmacy Website"
+        description="Follow this launch checklist to build and publish your pharmacy storefront."
+        variant="gradient"
+        actions={
           <div className="rounded-2xl border border-primary/20 bg-white/80 px-4 py-3 text-right">
             <p className="text-xs font-semibold uppercase tracking-wide text-neutral-gray">Readiness</p>
             <p className="text-lg font-bold text-neutral-dark">{readinessPercent}%</p>
           </div>
-        </div>
-        <div className="mt-4 grid gap-2 text-xs sm:grid-cols-3">
+        }
+      >
+        <div className="grid gap-2 text-xs sm:grid-cols-3">
           <p className="inline-flex items-center gap-2 rounded-lg border border-primary/20 bg-white/80 px-3 py-2 text-neutral-dark"><FiShield className="text-primary" /> Safe publish workflow</p>
           <p className="inline-flex items-center gap-2 rounded-lg border border-primary/20 bg-white/80 px-3 py-2 text-neutral-dark"><FiClock className="text-primary" /> Guided step sequence</p>
           <p className="inline-flex items-center gap-2 rounded-lg border border-primary/20 bg-white/80 px-3 py-2 text-neutral-dark"><FiCheckCircle className="text-primary" /> Progress saved continuously</p>
         </div>
-      </section>
+      </PageHeader>
 
       <Card className="p-6">
         <div className="flex items-center justify-between">

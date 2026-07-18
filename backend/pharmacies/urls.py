@@ -1,7 +1,7 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from pharmacies.views import PharmacyOrderViewSet, PharmacyViewSet, ProductViewSet
-from pharmacies.payment_views import (
+from pharmacies.views.payment import (
     fawry_create_code,
     fawry_webhook,
     stripe_create_intent,

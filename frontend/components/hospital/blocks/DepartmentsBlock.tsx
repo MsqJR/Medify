@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Hospital, Stethoscope } from "lucide-react";
 import { getHospitalDepartments } from "@/lib/hospitalApi";
 import DepartmentsCarousel from "./DepartmentsCarousel";
 
@@ -134,7 +135,7 @@ export default async function DepartmentsBlock({
               borderRadius: "var(--hospital-radius)",
             }}
           >
-            <span className="text-5xl mb-4">🏥</span>
+            <Hospital className="inline-block w-12 h-12 mb-4" style={{ color: 'var(--hospital-text-muted)' }} />
             <p
               className="text-lg font-medium"
               style={{ color: "var(--hospital-text-muted)" }}
@@ -201,7 +202,7 @@ export default async function DepartmentsBlock({
             {/* CTA Text */}
             <div className="max-w-xl">
               <div className="flex items-center gap-3 mb-3">
-                <span className="text-3xl">🩺</span>
+                <Stethoscope className="inline-block w-7 h-7" />
                 <span className="text-xs font-bold uppercase tracking-widest text-white/70">
                   Ready to get started?
                 </span>

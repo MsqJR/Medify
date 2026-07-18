@@ -7,36 +7,18 @@ import { useSearchParams } from 'next/navigation'
 import { FiArrowLeft, FiClock, FiMapPin, FiPhoneCall } from 'react-icons/fi'
 import { AIChatbot } from '@/components/pharmacy/AIChatbot'
 import { BrandLogo } from '@/components/pharmacy/BrandLogo'
-import { getSiteItem, setSiteOwnerId } from '@/lib/storage'
-import { resolveOpenHours } from '@/lib/pharmacyTemplateRuntime'
+import { getSiteItem } from '@/lib/storage'
+import { safeJsonParse, buildTemplatePath, syncSiteOwner, resolveOpenHours } from '@/lib/pharmacyTemplateRuntime'
 
 type PharmacySetup = { phone?: string; address?: string }
 type BusinessInfo = { name?: string; logo?: string; contactPhone?: string; address?: string; workingHours?: Record<string, { open?: string; close?: string; closed?: boolean }> }
-
-function safeJsonParse<T>(value: string | null): T | null {
-  if (!value) return null
-  try {
-    return JSON.parse(value) as T
-  } catch {
-    return null
-  }
-}
 
 function ContactContent() {
   const searchParams = useSearchParams()
   const isDemo = searchParams?.get('demo') === '1' || searchParams?.get('demo') === 'true'
   const ownerId = searchParams?.get('owner') || ''
 
-  const withDemo = (path: string) => {
-    const [base, hash] = path.split('#')
-    const [pathname, query = ''] = base.split('?')
-    const params = new URLSearchParams(query)
-    if (isDemo) params.set('demo', '1')
-    if (ownerId) params.set('owner', ownerId)
-    const nextQuery = params.toString()
-    return `${pathname}${nextQuery ? `?${nextQuery}` : ''}${hash ? `#${hash}` : ''}`
-  }
-
+  const withDemo = (path: string) => buildTemplatePath(path, { isDemo, ownerId })
   const [brand, setBrand] = useState<{ name: string; logo: string | null; phone: string; address: string; openHours: string }>({
     name: isDemo ? 'Classic Pharmacy' : '',
     logo: isDemo ? '/mod logo.png' : null,
@@ -46,9 +28,7 @@ function ContactContent() {
   })
 
   useEffect(() => {
-    if (ownerId) {
-      setSiteOwnerId(ownerId)
-    }
+    syncSiteOwner(ownerId)
   }, [ownerId])
 
   useEffect(() => {
@@ -96,16 +76,16 @@ function ContactContent() {
       <header className="bg-white/80 backdrop-blur border-b border-neutral-border">
         <div className="mx-auto max-w-6xl px-4 py-4 flex items-center justify-between gap-3">
           <Link href={withDemo('/templates/pharmacy/2')} className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-xl bg-amber-50 flex items-center justify-center overflow-hidden border border-amber-300 shadow-sm">
+            <div className="w-11 h-11 rounded-xl bg-amber-50 flex items-center justify-center overflow-hidden border border-amber-300 shadow-sm p-0.5">
               {isDemo ? (
-                <Image src="/mod logo.png" alt="Logo" width={44} height={44} className="object-cover" />
+                <Image src="/mod logo.png" alt="Logo" width={40} height={40} className="object-contain" />
               ) : (
                 <BrandLogo
                   src={brand.logo}
                   alt={`${brand.name || 'Pharmacy'} logo`}
                   fallbackText={brand.name || 'P'}
-                  imageClassName="w-full h-full object-cover"
-                  fallbackClassName="w-full h-full bg-[#7a5c2e] flex items-center justify-center text-white font-bold text-xs"
+                  imageClassName="w-full h-full object-contain"
+                  fallbackClassName="w-full h-full bg-[#7a5c2e] flex items-center justify-center text-white font-bold text-xs rounded-lg"
                 />
               )}
             </div>

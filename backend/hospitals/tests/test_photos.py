@@ -283,18 +283,22 @@ class PhotoDeleteTests(PhotoTestBase):
     def _detail_url(self, photo_id):
         return reverse('hospital-photo-detail', args=[str(photo_id)])
 
+    def _deactivate_url(self, photo_id):
+        return reverse('hospital-photo-deactivate', args=[str(photo_id)])
+
     def test_delete_returns_204(self):
         response = self.client.delete(self._detail_url(self.photo.id))
         self.assertEqual(response.status_code, 204)
+        self.assertFalse(HospitalPhoto.objects.filter(id=self.photo.id).exists())
 
-    def test_delete_is_soft(self):
-        """Deleted photo is still in the DB but inactive."""
-        self.client.delete(self._detail_url(self.photo.id))
+    def test_deactivate_is_soft(self):
+        """Deactivated photo is still in the DB but inactive."""
+        self.client.post(self._deactivate_url(self.photo.id))
         self.photo.refresh_from_db()
         self.assertFalse(self.photo.is_active)
 
-    def test_deleted_photo_absent_from_list(self):
-        self.client.delete(self._detail_url(self.photo.id))
+    def test_deactivated_photo_absent_from_list(self):
+        self.client.post(self._deactivate_url(self.photo.id))
         list_response = self.client.get(reverse('hospital-photo-list'))
         results = list_response.data.get('results', list_response.data)
         ids = {item['id'] for item in results}
@@ -303,12 +307,19 @@ class PhotoDeleteTests(PhotoTestBase):
     def test_cannot_delete_other_users_photo(self):
         response = self.other_client.delete(self._detail_url(self.photo.id))
         self.assertEqual(response.status_code, 404)
-        # Ensure it's still active
+
+    def test_cannot_deactivate_other_users_photo(self):
+        response = self.other_client.post(self._deactivate_url(self.photo.id))
+        self.assertEqual(response.status_code, 404)
         self.photo.refresh_from_db()
         self.assertTrue(self.photo.is_active)
 
     def test_unauthenticated_cannot_delete(self):
         response = self.anon_client.delete(self._detail_url(self.photo.id))
+        self.assertEqual(response.status_code, 401)
+
+    def test_unauthenticated_cannot_deactivate(self):
+        response = self.anon_client.post(self._deactivate_url(self.photo.id))
         self.assertEqual(response.status_code, 401)
 
 

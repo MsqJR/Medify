@@ -59,7 +59,7 @@ class ChatbotAPITests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
         self.assertEqual(response.data['code'], 'FEATURE_LOCKED')
 
-    @patch('core.views.chatbot.MedicalChatbotService.generate_response')
+    @patch('core.services.chatbot.MedicalChatbotService.generate_response')
     @patch('core.services.subscription.has_feature_access')
     def test_chatbot_rate_limiting(self, mock_access, mock_generate):
         mock_access.return_value = True
@@ -100,7 +100,7 @@ class ChatbotAPITests(APITestCase):
         self.assertEqual(res3.status_code, status.HTTP_429_TOO_MANY_REQUESTS)
         self.assertIn('Rate limit exceeded', res3.data['detail'])
 
-    @patch('core.views.chatbot.ask_rag')
+    @patch('rag_model.services.rag_service.ask_rag')
     def test_pharmacy_visitor_chatbot_via_rag(self, mock_ask_rag):
         # Setup a pharmacy subdomain
         pharmacy_owner = User.objects.create_user(

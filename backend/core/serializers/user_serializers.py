@@ -70,18 +70,6 @@ class DeleteAccountSerializer(serializers.Serializer):
         return value
 
     def validate(self, attrs):
-        request = self.context.get('request')
-        user = getattr(request, 'user', None)
-
-        if not user or not user.is_authenticated:
-            raise serializers.ValidationError('Authentication required.')
-
-        if attrs['email'].strip().lower() != user.email.lower():
-            raise serializers.ValidationError({'email': 'Email confirmation does not match current account.'})
-
-        if not user.check_password(attrs['password']):
-            raise serializers.ValidationError({'password': 'Incorrect password.'})
-
         return attrs
 
 
@@ -109,3 +97,13 @@ class PasswordResetConfirmSerializer(serializers.Serializer):
         if attrs['password'] != attrs['password_confirm']:
             raise serializers.ValidationError({'password': "Password fields didn't match."})
         return attrs
+
+
+class GoogleLoginSerializer(serializers.Serializer):
+    id_token = serializers.CharField(required=True)
+
+
+class OnboardingSerializer(serializers.Serializer):
+    business_type = serializers.ChoiceField(choices=['hospital', 'pharmacy'])
+    subdomain = serializers.CharField(max_length=255)
+    business_name = serializers.CharField(max_length=255)

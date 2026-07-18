@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { PageHeader } from '@/components/dashboard'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Toggle } from '@/components/ui/Toggle'
@@ -128,14 +129,7 @@ function HospitalAIAssistantContent() {
 
   return (
     <div className="space-y-6 w-full max-w-full overflow-x-hidden">
-      <div>
-        <h1 className="text-3xl font-bold text-neutral-dark mb-2">
-          AI Assistant for Patients
-        </h1>
-        <p className="text-neutral-gray">
-          Configure the AI chatbot that helps patients on your website
-        </p>
-      </div>
+      <PageHeader title="AI Assistant for Patients" description="Configure the AI chatbot that helps patients on your website" />
 
       {!hasAIChatbot && (
         <div className="rounded-xl border border-blue-200 bg-blue-50 px-5 py-4 flex flex-wrap items-center justify-between gap-4">

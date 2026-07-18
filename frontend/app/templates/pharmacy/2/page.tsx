@@ -19,9 +19,9 @@ import { AIChatbot } from '@/components/pharmacy/AIChatbot'
 
 import { BrandLogo } from '@/components/pharmacy/BrandLogo'
 import { ProductImage } from '@/components/pharmacy/ProductImage'
-import { getSiteItem, setSiteItem, removeSiteItem, getStoredUser, setSiteOwnerId } from '@/lib/storage'
+import { getSiteItem, setSiteItem, removeSiteItem, getStoredUser } from '@/lib/storage'
 import { getStoredPharmacyThemeSettings, isSectionEnabled } from '@/lib/pharmacyTheme'
-import { resolveOpenHours } from '@/lib/pharmacyTemplateRuntime'
+import { safeJsonParse, buildTemplatePath, syncSiteOwner, resolveOpenHours } from '@/lib/pharmacyTemplateRuntime'
 
 type PharmacySetup = {
   phone?: string
@@ -60,30 +60,12 @@ type Product = {
 
 type CartItem = { product: Product; quantity: number }
 
-function safeJsonParse<T>(value: string | null): T | null {
-  if (!value) return null
-  try {
-    return JSON.parse(value) as T
-  } catch {
-    return null
-  }
-}
-
 function Template2HomeContent() {
   const searchParams = useSearchParams()
   const isDemo = searchParams?.get('demo') === '1' || searchParams?.get('demo') === 'true'
   const ownerId = searchParams?.get('owner') || ''
   const cartKey = isDemo ? 'pharmacy2_cart_demo' : 'pharmacy2_cart'
-
-  const withDemo = (path: string) => {
-    const [base, hash] = path.split('#')
-    const [pathname, query = ''] = base.split('?')
-    const params = new URLSearchParams(query)
-    if (isDemo) params.set('demo', '1')
-    if (ownerId) params.set('owner', ownerId)
-    const nextQuery = params.toString()
-    return `${pathname}${nextQuery ? `?${nextQuery}` : ''}${hash ? `#${hash}` : ''}`
-  }
+  const withDemo = (path: string) => buildTemplatePath(path, { isDemo, ownerId })
 
   const [pharmacySetup, setPharmacySetup] = useState<PharmacySetup | null>(null)
   const [businessInfo, setBusinessInfo] = useState<BusinessInfo | null>(null)
@@ -91,8 +73,8 @@ function Template2HomeContent() {
 
   useEffect(() => {
     const user = getStoredUser()
-    if (ownerId) setSiteOwnerId(ownerId)
-    else if (user?.id) setSiteOwnerId(user.id)
+    if (ownerId) syncSiteOwner(ownerId)
+    else if (user?.id) syncSiteOwner(user.id)
     
     const localSetup = getSiteItem('pharmacySetup')
     const localInfo = getSiteItem('businessInfo')
@@ -264,16 +246,16 @@ function Template2HomeContent() {
       <header className="sticky top-0 z-30 bg-white/80 backdrop-blur border-b border-neutral-border">
         <div className="mx-auto max-w-6xl px-4 py-4 flex items-center justify-between gap-3">
           <Link href={withDemo('/templates/pharmacy/2')} className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-xl bg-amber-50 flex items-center justify-center overflow-hidden border border-amber-300 shadow-sm">
+            <div className="w-11 h-11 rounded-xl bg-amber-50 flex items-center justify-center overflow-hidden border border-amber-300 shadow-sm p-0.5">
               {isDemo ? (
-                <Image src="/mod logo.png" alt="Logo" width={44} height={44} className="object-cover" />
+                <Image src="/mod logo.png" alt="Logo" width={40} height={40} className="object-contain" />
               ) : (
                 <BrandLogo
                   src={brand.logo}
                   alt={`${brand.name || 'Pharmacy'} logo`}
                   fallbackText={brand.name || 'P'}
-                  imageClassName="w-full h-full object-cover"
-                  fallbackClassName="w-full h-full bg-[#7a5c2e] flex items-center justify-center text-white font-bold text-xs"
+                  imageClassName="w-full h-full object-contain"
+                  fallbackClassName="w-full h-full bg-[#7a5c2e] flex items-center justify-center text-white font-bold text-xs rounded-lg"
                 />
               )}
             </div>
@@ -563,7 +545,7 @@ function Template2HomeContent() {
 
       <footer className="border-t border-neutral-border bg-white">
         <div className="mx-auto max-w-6xl px-4 py-8 text-sm text-neutral-gray flex flex-col sm:flex-row gap-2 sm:items-center sm:justify-between">
-          <div>© {new Date().getFullYear()} {brand.name || (isDemo ? 'Classic Pharmacy' : 'Pharmacy')}. All rights reserved.</div>
+          <div>&copy; {new Date().getFullYear()} {brand.name || (isDemo ? 'Classic Pharmacy' : 'Pharmacy')}. All rights reserved.</div>
           <div className="opacity-80">This website done by Medify</div>
         </div>
       </footer>

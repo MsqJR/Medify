@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { FiChevronDown } from "react-icons/fi";
+import { FiChevronDown, FiCalendar } from "react-icons/fi";
+import { Hospital, Stethoscope } from "lucide-react";
 import { getHospitalDoctors, getHospitalDepartments, hospitalApi } from "@/lib/hospitalApi";
 import HeroBackgroundSlideshow from "./HeroBackgroundSlideshow";
 
@@ -194,7 +195,7 @@ export default async function HeroBlock({ settings, subdomain }: HeroBlockProps)
               style={{
                 background: "rgba(255,255,255,0.12)",
                 border: "2px solid rgba(255,255,255,0.85)",
-                borderRadius: "9999px",
+                borderRadius: "var(--hospital-radius)",
                 backdropFilter: "blur(6px)",
               }}
             >
@@ -216,7 +217,7 @@ export default async function HeroBlock({ settings, subdomain }: HeroBlockProps)
                   backdropFilter: "blur(8px)",
                 }}
               >
-                <span className="text-base">🩺</span>
+                <Stethoscope className="inline-block w-4 h-4" />
                 {doctorsCount}+ Doctors
               </span>
             )}
@@ -230,7 +231,7 @@ export default async function HeroBlock({ settings, subdomain }: HeroBlockProps)
                   backdropFilter: "blur(8px)",
                 }}
               >
-                <span className="text-base">🏥</span>
+                <Hospital className="inline-block w-4 h-4" />
                 {departmentsCount} Departments
               </span>
             )}
@@ -244,7 +245,7 @@ export default async function HeroBlock({ settings, subdomain }: HeroBlockProps)
                   backdropFilter: "blur(8px)",
                 }}
               >
-                <span className="text-base">📅</span>
+                <FiCalendar className="inline-block w-4 h-4" />
                 {yearsOfExperience} Years of Experience
               </span>
             )}

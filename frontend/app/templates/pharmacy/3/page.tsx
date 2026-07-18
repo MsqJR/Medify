@@ -8,8 +8,9 @@ import { FiShoppingCart, FiPlus, FiMinus } from 'react-icons/fi'
 
 import { BrandLogo } from '@/components/pharmacy/BrandLogo'
 import { ProductImage } from '@/components/pharmacy/ProductImage'
-import { getSiteItem, setSiteItem, removeSiteItem, getStoredUser, setSiteOwnerId } from '@/lib/storage'
+import { getSiteItem, setSiteItem, removeSiteItem, getStoredUser } from '@/lib/storage'
 import { getStoredPharmacyThemeSettings, isSectionEnabled } from '@/lib/pharmacyTheme'
+import { safeJsonParse, buildTemplatePath, syncSiteOwner, readCart, writeCart } from '@/lib/pharmacyTemplateRuntime'
 
 type PharmacySetup = {
   phone?: string
@@ -46,30 +47,12 @@ type Product = {
 
 type CartItem = { product: Product; quantity: number }
 
-function safeJsonParse<T>(value: string | null): T | null {
-  if (!value) return null
-  try {
-    return JSON.parse(value) as T
-  } catch {
-    return null
-  }
-}
-
 function Template3HomeContent() {
   const searchParams = useSearchParams()
   const isDemo = searchParams?.get('demo') === '1' || searchParams?.get('demo') === 'true'
   const ownerId = searchParams?.get('owner') || ''
   const cartKey = isDemo ? 'pharmacy3_cart_demo' : 'pharmacy3_cart'
-
-  const withDemo = (path: string) => {
-    const [base, hash] = path.split('#')
-    const [pathname, query = ''] = base.split('?')
-    const params = new URLSearchParams(query)
-    if (isDemo) params.set('demo', '1')
-    if (ownerId) params.set('owner', ownerId)
-    const nextQuery = params.toString()
-    return `${pathname}${nextQuery ? `?${nextQuery}` : ''}${hash ? `#${hash}` : ''}`
-  }
+  const withDemo = (path: string) => buildTemplatePath(path, { isDemo, ownerId })
 
   const [pharmacySetup, setPharmacySetup] = useState<PharmacySetup | null>(null)
   const [businessInfo, setBusinessInfo] = useState<BusinessInfo | null>(null)
@@ -77,8 +60,8 @@ function Template3HomeContent() {
 
   useEffect(() => {
     const user = getStoredUser()
-    if (ownerId) setSiteOwnerId(ownerId)
-    else if (user?.id) setSiteOwnerId(user.id)
+    if (ownerId) syncSiteOwner(ownerId)
+    else if (user?.id) syncSiteOwner(user.id)
     
     const localSetup = getSiteItem('pharmacySetup')
     const localInfo = getSiteItem('businessInfo')
@@ -87,19 +70,11 @@ function Template3HomeContent() {
   }, [ownerId])
 
   useEffect(() => {
-    const raw = isDemo ? localStorage.getItem(cartKey) : getSiteItem(cartKey)
-    const saved = safeJsonParse<CartItem[]>(raw)
-    setCart(saved || [])
+    setCart(readCart(cartKey, isDemo))
   }, [cartKey, isDemo])
 
   useEffect(() => {
-    if (cart.length > 0) {
-      if (isDemo) localStorage.setItem(cartKey, JSON.stringify(cart))
-      else setSiteItem(cartKey, JSON.stringify(cart))
-    } else {
-      if (isDemo) localStorage.removeItem(cartKey)
-      else removeSiteItem(cartKey)
-    }
+    writeCart(cartKey, isDemo, cart)
   }, [cart, cartKey, isDemo])
 
   const brand = useMemo(() => {
@@ -428,7 +403,7 @@ function Template3HomeContent() {
       <footer className="border-t border-neutral-border bg-white">
         <div className="mx-auto max-w-6xl px-4 py-6 text-xs sm:text-sm text-neutral-gray flex flex-col sm:flex-row gap-2 sm:items-center sm:justify-between">
           <div>
-            © {new Date().getFullYear()}{' '}
+            &copy; {new Date().getFullYear()}{' '}
             {brand.name || (isDemo ? 'Minimal Pharmacy' : 'Pharmacy')}. All rights reserved.
           </div>
           <div className="opacity-80">This website done by Medify</div>

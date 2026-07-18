@@ -323,24 +323,24 @@ export default function DoctorsListClient({ title, subtitle, doctors, fetchError
 
         {/* Filter bar */}
         <div
-          className="mb-8 rounded-2xl p-4 shadow-sm"
+          className="mb-8 rounded-2xl p-4 shadow-sm max-w-full"
           style={{
             backgroundColor: 'var(--hospital-surface)',
             border: '1px solid var(--hospital-border)',
             borderRadius: 'var(--hospital-radius)',
           }}
         >
-          <div className="grid gap-4 lg:grid-cols-[1.2fr_1fr]">
+          <div className="grid gap-4 lg:grid-cols-[1.2fr_1fr] min-w-0">
             {/* Search + department filters */}
-            <div>
-              <div className="relative">
+            <div className="min-w-0">
+              <div className="relative min-w-0 w-full">
                 <FiSearch className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2" style={{ color: 'var(--hospital-text-muted)' }} />
                 <input
                   type="text"
                   value={query}
                   onChange={event => { setQuery(event.target.value); setShowAll(true); }}
                   placeholder="Search doctors, specialties, or departments…"
-                  className="w-full rounded-full px-12 py-3 text-sm shadow-sm outline-none transition"
+                  className="w-full rounded-full px-12 py-3 text-sm shadow-sm outline-none transition min-w-0"
                   style={{
                     border: '1px solid var(--hospital-border)',
                     backgroundColor: 'var(--hospital-input-bg)',
@@ -456,7 +456,7 @@ export default function DoctorsListClient({ title, subtitle, doctors, fetchError
                 return (
                   <div
                     key={doc.id}
-                    className="group flex h-full flex-col overflow-hidden shadow-md transition hover:-translate-y-0.5 hover:shadow-lg animate-fade-up cursor-pointer"
+                    className="group flex h-full flex-col overflow-hidden shadow-md transition hover:-translate-y-0.5 hover:shadow-lg animate-fade-up cursor-pointer max-w-full"
                     style={{
                       backgroundColor: 'var(--hospital-surface)',
                       border: '1px solid var(--hospital-border)',

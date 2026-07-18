@@ -14,10 +14,21 @@ export const Button: React.FC<ButtonProps> = ({
   disabled,
   ...props
 }) => {
-  const baseClasses = 'inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-white disabled:opacity-50 disabled:cursor-not-allowed'
+  let baseClasses = 'text-sm inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-white disabled:opacity-50 disabled:cursor-not-allowed'
   
+  // Safely override defaults if custom size/padding classes are passed
+  if (className.includes('px-') || className.includes('p-')) {
+    baseClasses = baseClasses.replace('px-6', '')
+  }
+  if (className.includes('py-') || className.includes('p-')) {
+    baseClasses = baseClasses.replace('py-3', '')
+  }
+  if (className.includes('text-')) {
+    baseClasses = baseClasses.replace('text-sm', '')
+  }
+
   const variantClasses = {
-    primary: 'bg-primary text-white hover:bg-primary-dark motion-safe:hover:-translate-y-0.5 shadow-[0_16px_28px_-20px_rgba(14,124,134,0.6)]',
+    primary: 'bg-primary text-white hover:bg-primary-dark motion-safe:hover:-translate-y-0.5',
     secondary: 'bg-white text-primary border-2 border-primary hover:bg-primary-light hover:text-primary-dark',
     ghost: 'text-neutral-gray hover:bg-neutral-light',
   }

@@ -285,7 +285,7 @@ export const Topbar: React.FC<TopbarProps> = ({ onMenuClick }) => {
       <div className="h-16 shrink-0 bg-white border-b border-neutral-border flex items-center justify-between px-4 sm:px-6 overflow-hidden w-full max-w-full">
         <button
           onClick={onMenuClick}
-          className="md:hidden p-2 text-neutral-gray hover:text-neutral-dark transition-colors mr-2 shrink-0"
+          className="md:hidden p-3 text-neutral-gray hover:text-neutral-dark transition-colors mr-2 shrink-0"
           aria-label="Open sidebar menu"
           title="Open menu"
         >

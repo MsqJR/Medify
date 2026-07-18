@@ -13,6 +13,7 @@ import {
   persistPharmacyThemeSettings,
 } from '@/lib/pharmacyTheme'
 import { getSiteItem, getSiteOwnerId, getStoredUser, setPublicSiteItem, setSiteItem, setSiteOwnerId } from '@/lib/storage'
+import { safeJsonParse } from '@/lib/pharmacyTemplateRuntime'
 
 type BusinessInfoSnapshot = {
   name?: string
@@ -21,15 +22,6 @@ type BusinessInfoSnapshot = {
   address?: string
   contactPhone?: string
   workingHours?: Record<string, unknown>
-}
-
-function safeJsonParse<T>(value: string | null): T | null {
-  if (!value) return null
-  try {
-    return JSON.parse(value) as T
-  } catch {
-    return null
-  }
 }
 
 export default function PharmacyTemplatesLayout({ children }: { children: React.ReactNode }) {

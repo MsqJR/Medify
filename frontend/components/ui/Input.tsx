@@ -15,24 +15,30 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(({
   className = '',
   type,
   showPasswordToggle,
+  id,
   ...props
 }, ref) => {
   const [isPasswordVisible, setIsPasswordVisible] = useState(false)
   const isPasswordField = Boolean(showPasswordToggle && type === 'password')
   const inputType = isPasswordField ? (isPasswordVisible ? 'text' : 'password') : type
+  const inputId = id || (label ? label.toLowerCase().replace(/\s+/g, '-') : undefined)
+  const errorId = inputId ? `${inputId}-error` : undefined
 
   return (
     <div className="w-full">
       {label && (
-        <label className="block text-sm font-medium text-neutral-dark mb-2">
+        <label htmlFor={inputId} className="block text-sm font-medium text-neutral-dark mb-2">
           {label}
         </label>
       )}
       <div className="relative">
         <input
           ref={ref}
+          id={inputId}
           type={inputType}
           className={`input-field ${error ? 'border-error' : ''} ${isPasswordField ? 'pr-12' : ''} ${className}`}
+          aria-invalid={error ? 'true' : undefined}
+          aria-describedby={error ? errorId : undefined}
           {...props}
         />
         {isPasswordField && (
@@ -47,7 +53,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(({
         )}
       </div>
       {error && (
-        <p className="mt-1 text-sm text-error">{error}</p>
+        <p id={errorId} className="mt-1 text-sm text-error" role="alert">{error}</p>
       )}
     </div>
   )

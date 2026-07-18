@@ -3,17 +3,13 @@
 import { FiTrash2, FiPhone, FiMail, FiSearch, FiFilter } from 'react-icons/fi';
 
 import { useEffect, useMemo, useState } from 'react';
+import { PageHeader } from '@/components/dashboard';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { ConfirmModal } from '@/components/hospital/ConfirmModal';
 import { hospitalAdminApi } from '@/lib/hospitalAdminApi';
 import type { Appointment, AppointmentStatus } from '@/types/hospital';
-
-const STATUS_STYLES: Record<AppointmentStatus, string> = {
-  PENDING: 'bg-amber-50 text-amber-700 border border-amber-200',
-  CONFIRMED: 'bg-emerald-50 text-emerald-700 border border-emerald-200',
-  CANCELLED: 'bg-red-50 text-red-700 border border-red-200',
-};
+import { STATUS_STYLES } from '@/types/hospital';
 
 export default function HospitalAppointmentsPage() {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
@@ -135,10 +131,7 @@ export default function HospitalAppointmentsPage() {
         onClose={closeModal}
       />
       
-      <div>
-        <h1 className="text-3xl font-bold text-neutral-dark">Appointments</h1>
-        <p className="mt-1 text-neutral-gray">Manage patient bookings and status updates.</p>
-      </div>
+      <PageHeader title="Appointments" description="Manage patient bookings and status updates." />
 
       <Card className="p-5 flex flex-col gap-5">
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">

@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import React, { Suspense, useCallback, useEffect, useMemo, useState } from 'react'
+import React, { Suspense, useMemo, useEffect } from 'react'
 import { useSearchParams } from 'next/navigation'
 import {
   FiFilter,
@@ -14,20 +14,12 @@ import {
 } from 'react-icons/fi'
 
 import {
-  buildTemplatePath,
-  calculateSubtotal,
-  countCartItems,
   getDemoState,
-  loadBrandInfo,
-  loadTemplateProducts,
-  parsePriceToNumber,
-  readCart,
-  syncSiteOwner,
-  type TemplateCartItem,
   type TemplateProduct,
-  writeCart,
 } from '@/lib/pharmacyTemplateRuntime'
+import { usePharmacyMedications, type SortValue } from '@/lib/usePharmacyMedications'
 import { ProductImage } from '@/components/pharmacy/ProductImage'
+import { BrandLogo } from '@/components/pharmacy/BrandLogo'
 import {
   getTemplate6StockPillClasses,
   getTemplate6StockLabel,
@@ -37,50 +29,36 @@ import {
   TEMPLATE6_DEMO_PRODUCTS,
 } from '@/app/templates/pharmacy/6/data/demo'
 
-type SortValue = 'featured' | 'name' | 'price_low' | 'price_high'
-
 function TemplateSixMedicationsContent() {
   const searchParams = useSearchParams()
   const demoState = useMemo(() => getDemoState(searchParams), [searchParams])
   const cartKey = demoState.isDemo ? 'pharmacy6_cart_demo' : 'pharmacy6_cart'
   const requestedCategory = (searchParams?.get('category') || '').trim()
 
-  const withDemo = useCallback((path: string) => buildTemplatePath(path, demoState), [demoState])
-
-  const [brand, setBrand] = useState(TEMPLATE6_DEMO_BRAND)
-  const [products, setProducts] = useState<TemplateProduct[]>([])
-  const [cart, setCart] = useState<TemplateCartItem[]>([])
-  const [search, setSearch] = useState('')
-  const [category, setCategory] = useState(requestedCategory || 'All')
-  const [sortBy, setSortBy] = useState<SortValue>('featured')
-
-  useEffect(() => {
-    syncSiteOwner(demoState.ownerId)
-  }, [demoState.ownerId])
-
-  useEffect(() => {
-    setBrand(loadBrandInfo(demoState.isDemo, TEMPLATE6_DEMO_BRAND))
-
-    const load = async () => {
-      const loaded = await loadTemplateProducts(demoState.isDemo, TEMPLATE6_DEMO_PRODUCTS)
-      setProducts(loaded)
-    }
-
-    void load()
-  }, [demoState.isDemo])
-
-  useEffect(() => {
-    setCart(readCart(cartKey, demoState.isDemo))
-  }, [cartKey, demoState.isDemo])
-
-  useEffect(() => {
-    writeCart(cartKey, demoState.isDemo, cart)
-  }, [cart, cartKey, demoState.isDemo])
-
-  const categories = useMemo(() => {
-    const unique = new Set(products.map((item) => item.category).filter(Boolean))
-    return ['All', ...Array.from(unique).sort()]
-  }, [products])
+  const {
+    brand,
+    cart,
+    search,
+    setSearch,
+    category,
+    setCategory,
+    sortBy,
+    setSortBy,
+    withDemo,
+    categories,
+    filteredProducts,
+    cartCount,
+    subtotal,
+    addToCart,
+    updateQty,
+    clearFilters,
+  } = usePharmacyMedications({
+    demoState,
+    cartKey,
+    demoBrand: TEMPLATE6_DEMO_BRAND,
+    demoProducts: TEMPLATE6_DEMO_PRODUCTS,
+    initialCategory: requestedCategory || undefined,
+  })
 
   useEffect(() => {
     if (!requestedCategory) {
@@ -101,68 +79,24 @@ function TemplateSixMedicationsContent() {
     return count
   }, [category, search, sortBy])
 
-  const filteredProducts = useMemo(() => {
-    const query = search.trim().toLowerCase()
-
-    let next = products.filter((item) => {
-      const matchesCategory = category === 'All' || item.category === category
-      const matchesSearch =
-        !query ||
-        item.name.toLowerCase().includes(query) ||
-        item.category.toLowerCase().includes(query) ||
-        (item.description || '').toLowerCase().includes(query)
-      return matchesCategory && matchesSearch
-    })
-
-    if (sortBy === 'featured') next = [...next].sort((a, b) => (b.stock || 0) - (a.stock || 0))
-    if (sortBy === 'name') next = [...next].sort((a, b) => a.name.localeCompare(b.name))
-    if (sortBy === 'price_low') next = [...next].sort((a, b) => parsePriceToNumber(a.price) - parsePriceToNumber(b.price))
-    if (sortBy === 'price_high') next = [...next].sort((a, b) => parsePriceToNumber(b.price) - parsePriceToNumber(a.price))
-
-    return next
-  }, [category, products, search, sortBy])
-
-  const cartCount = useMemo(() => countCartItems(cart), [cart])
-  const subtotal = useMemo(() => calculateSubtotal(cart), [cart])
-
-  const addToCart = (product: TemplateProduct) => {
-    if (!product.inStock || (product.stock || 0) <= 0) return
-
-    setCart((prev) => {
-      const existing = prev.find((item) => item.product.id === product.id)
-      if (existing) {
-        if ((product.stock || 0) <= existing.quantity) return prev
-        return prev.map((item) =>
-          item.product.id === product.id
-            ? { ...item, quantity: item.quantity + 1 }
-            : item,
-        )
-      }
-      return [...prev, { product, quantity: 1 }]
-    })
-  }
-
-  const updateQty = (productId: string, delta: number) => {
-    setCart((prev) => {
-      const current = prev.find((item) => item.product.id === productId)
-      if (!current) return prev
-
-      const nextQty = current.quantity + delta
-      if (nextQty <= 0) return prev.filter((item) => item.product.id !== productId)
-      if ((current.product.stock || 0) < nextQty) return prev
-
-      return prev.map((item) =>
-        item.product.id === productId ? { ...item, quantity: nextQty } : item,
-      )
-    })
-  }
-
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100">
       <header className="sticky top-0 z-40 border-b border-slate-800 bg-slate-950/90 backdrop-blur">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6">
           <Link href={withDemo('/templates/pharmacy/6')} className="inline-flex items-center gap-2 text-sm font-semibold text-slate-100">
-            <span className="grid h-9 w-9 place-items-center rounded-xl bg-lime-500 text-slate-950"><FiZap /></span>
+            <div className="relative h-9 w-9 flex-shrink-0 overflow-hidden rounded-xl bg-lime-500 text-slate-950 flex items-center justify-center p-0.5 shadow-sm">
+              {!demoState.isDemo && brand.logo ? (
+                <BrandLogo
+                  src={brand.logo}
+                  alt={`${brand.name || 'Pharmacy'} logo`}
+                  fallbackText={brand.name || 'P'}
+                  imageClassName="h-full w-full object-contain"
+                  fallbackClassName="h-full w-full bg-lime-500 flex items-center justify-center text-slate-950 font-bold rounded-lg text-xs"
+                />
+              ) : (
+                <FiZap className="w-4 h-4" />
+              )}
+            </div>
             {brand.name || 'NeoMeds Studio'}
           </Link>
           <Link href={withDemo('/templates/pharmacy/6/checkout')} className="inline-flex items-center gap-2 rounded-full border border-slate-700 bg-slate-900 px-4 py-2 text-sm font-semibold text-slate-100 transition hover:border-lime-400">
@@ -222,11 +156,7 @@ function TemplateSixMedicationsContent() {
               {activeFilterCount > 0 ? (
                 <button
                   type="button"
-                  onClick={() => {
-                    setSearch('')
-                    setCategory('All')
-                    setSortBy('featured')
-                  }}
+                  onClick={clearFilters}
                   className="inline-flex items-center gap-1 rounded-full border border-slate-700 px-2.5 py-1 font-semibold text-slate-300 transition hover:border-lime-400 hover:text-lime-300"
                 >
                   <FiX size={12} /> Clear filters
@@ -242,11 +172,7 @@ function TemplateSixMedicationsContent() {
             <div className="mt-4 flex flex-wrap items-center justify-center gap-3">
               <button
                 type="button"
-                onClick={() => {
-                  setSearch('')
-                  setCategory('All')
-                  setSortBy('featured')
-                }}
+                onClick={clearFilters}
                 className="rounded-xl border border-slate-700 px-4 py-2 text-sm font-semibold text-slate-200 transition hover:border-lime-400 hover:text-lime-300"
               >
                 Reset filters
