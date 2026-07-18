@@ -1,135 +1,138 @@
 # Medify - Medical Website Builder Frontend
 
-A modern frontend for building medical websites for Hospitals and Pharmacies. Built with Next.js 16, TypeScript, and Tailwind CSS.
+A modern, high-performance Next.js 16 web application built with TypeScript and Tailwind CSS. The Medify frontend provides a professional, dashboard-driven SaaS platform that enables Hospital administrators and Pharmacy owners to build, customize, and manage their online storefronts and clinics.
 
-## Features
+---
 
-- 🏥 **Hospital Website Builder** - Form-based website creation
-- 💊 **Pharmacy Website Builder** - Purchase-aware template marketplace and website publishing workflow
-- 🤖 **AI Assistant** - Intelligent content generation and website management
-- 📊 **Dashboard** - Comprehensive dashboard with setup progress and operational modules
-- 🎨 **Modern UI** - Clean, professional design with Tailwind CSS
-- 📱 **Responsive** - Desktop-first design that works on all devices
+## 🌟 Core Features
 
-## Tech Stack
+- 🏥 **Hospital Builder** - Configurable modular workspace. Set clinic schedules, structure services, build department calendars, and manage doctor profile details.
+- 💊 **Pharmacy E-Commerce Workspace** - Integrated layout customizing, template marketplace, sandbox purchase activation, inventory tracking, and checkouts.
+- 🤖 **AI Assistant Interface** - Dedicated chatbot workspace (`/dashboard/ai-assistant`) using specific accent styling to visually isolate the AI context from the administrative interface.
+- 📁 **CSV Product Catalog Parser** - Drag-and-drop file uploader that reads and validates spreadsheet catalogs using client-side parsing before syncing backend-side.
+- 💳 **Payment & Checkout Sandbox** - UI-ready billing workflows integrating Stripe and Fawry payment views.
 
-- **Framework**: Next.js 16 (App Router)
-- **Language**: TypeScript 5.5+
-- **Styling**: Tailwind CSS
-- **Icons**: React Icons
-- **Architecture**: Component-based, reusable UI components
-- **Bundler**: Turbopack (default in Next.js 16)
+---
 
-## Getting Started
+## 🏗️ Project Architecture & Directory Map
 
-### Prerequisites
-
-- Node.js 20.9.0 or later
-- npm or yarn
-- TypeScript 5.1.0 or later
-
-### Installation
-
-1. Install dependencies:
-```bash
-npm install
+```
+frontend/
+├── app/                      # Next.js App Router root
+│   ├── [subdomain]/          # Tenant-specific published medical websites
+│   │   ├── booking/          # Patient booking flow
+│   │   ├── checkout/         # Medication e-commerce checkout page
+│   │   ├── departments/      # Services and departments views
+│   │   └── medications/      # Product/medication catalogs
+│   ├── dashboard/            # Administrative dashboard shell
+│   │   ├── ai-assistant/     # General dashboard AI chatbot
+│   │   ├── business-info/    # Organization coordinates & mapping
+│   │   ├── hospital/         # Hospital-specific administrative views
+│   │   │   ├── appointments/ # Appointments and doctor calendar settings
+│   │   │   ├── doctors/      # Doctor profile directory & timing grids
+│   │   │   └── setup/        # Modular website setup steps
+│   │   ├── pharmacy/         # Pharmacy-specific administrative views
+│   │   │   ├── products/     # Catalog uploader and inventory manager
+│   │   │   └── templates/    # Theme shop (purchase, active, cancel)
+│   │   └── settings/         # Account password resets & deletion panel
+│   ├── templates/            # Live preview folders for builders
+│   ├── layout.tsx            # Global layout wrapper
+│   └── globals.css           # Global stylesheets, Tailwind configuration, & themes
+├── components/               # Reusable React components
+│   ├── ui/                   # Custom UI controls (Button, Card, Modal, Input, etc.)
+│   ├── layout/               # Topbar & sidebar navigations
+│   └── LocationMapPicker.tsx # Mapping input component
+├── contexts/                 # Shared React state providers (e.g., SubscriptionContext)
+├── hooks/                    # Reusable React hooks
+├── lib/                      # REST API client engines and utilities
+│   ├── api.ts                # Base fetch client with JWT refresh interceptors
+│   ├── auth.ts               # Core session auth helper
+│   ├── hospitalAdminApi.ts   # CRUD requests for hospital resources
+│   └── pharmacy.ts           # Pharmacy metadata and template managers
+├── types/                    # TypeScript interfaces
+├── middleware.ts             # Host-to-subdomain rewritings
+└── package.json              # Development scripts and configuration
 ```
 
-2. Run the development server:
+---
+
+## 🌐 Dynamic Subdomain Rewrite (Multi-Tenancy)
+
+Medify uses custom middleware to dynamically serve tenant websites:
+1. **Intercepting Requests**: [middleware.ts](file:///home/mark/software-projects/uni/Medify_/frontend/middleware.ts) intercepts incoming requests and filters out Next.js assets (`/_next`, `/favicon.ico`) and main dashboard paths.
+2. **Subdomain Mapping**: If the browser host contains a tenant subdomain (e.g. `green-clinic.localhost:3000`), the middleware rewrites the destination URL to the dynamic route `app/[subdomain]/` internally.
+3. **Data Fetching**: The path `/app/[subdomain]/page.tsx` extracts the subdomain slug, requests matching setup data from the backend database, and serves the tailored page.
+
+---
+
+## 🛠️ Technical Stack & Key Libraries
+
+| Dependency | Purpose | Details |
+| --- | --- | --- |
+| **Next.js 16 (App Router)** | Core framework & routing engine | Configured to build using **Turbopack** dev mode for speed. |
+| **TypeScript 5.5+** | Compile-time safety | Strictly typed models matching Django DB models. |
+| **Tailwind CSS** | Styling and responsiveness | Implements modern styling classes and theme states. |
+| **Lucide React & React Icons**| SVG icon sets | Reusable visual cues. AI interfaces utilize custom icons. |
+| **Leaflet** | Interactive client maps | Used in [LocationMapPicker.tsx](file:///home/mark/software-projects/uni/Medify_/frontend/components/LocationMapPicker.tsx) for pinning locations. |
+| **Stripe React Wrapper** | Payment UI client | Connects payment checkout dialog boxes to stripe networks. |
+| **XLSX (SheetJS)** | Client-side spreadsheet parser | Process bulk pharmacy inventories on the client side. |
+
+---
+
+## 🔐 Auth Token Lifecycle & Interceptors
+
+All API communication with the Django REST API flows through the client wrapper in [lib/api.ts](file:///home/mark/software-projects/uni/Medify_/frontend/lib/api.ts):
+- **Access & Refresh Tokens**: Login retrieves access (30m) and refresh (7d) tokens, stored in local storage.
+- **Request Interceptor**: The base client automatically injects the `Authorization: Bearer <Access_Token>` header on all requests.
+- **Expired Token Handling (HTTP 401)**: If a request fails due to an expired access token, the wrapper intercepts the response, requests a rotated token via `/api/auth/token/refresh/`, and retries the original request.
+- **JWT Blacklist & Logout**: Logging out triggers a revocation request to the backend to blacklist the token, preventing re-use.
+
+---
+
+## 🎨 Design System & CSS Configuration
+
+The system styling follows guidelines defined in [DESIGN.md](file:///home/mark/software-projects/uni/Medify_/DESIGN.md):
+- **Typography Pairing**:
+  - **Display Titles**: *Fraunces* serif font for hero segments and landing screens.
+  - **Interface Labels & Body**: *Manrope* sans-serif font for dashboards and functional elements.
+- **Visual Accents**:
+  - **Trust Blue** (`#1B76FF`): Primary interactive elements (scarcity rules ensure this stays ≤10% of viewport area).
+  - **AI Purple** (`#7C3AED`): Highlights AI-assistant modules to isolate chatbot states from regular actions.
+  - **Neutral Canvas**: Chroma-0 grey canvas (`#F7F9FC`) using border outlines for flat resting cards instead of heavy shadows.
+
+---
+
+## 🚀 Commands & Development Scripts
+
+Run scripts from the `frontend/` directory:
+
 ```bash
+# Start development server with Turbopack compilation
 npm run dev
-```
 
-3. Open [http://localhost:3000](http://localhost:3000) in your browser
+# Lint codebase (Next.js config rules)
+npm run lint
 
-## Project Structure
-
-```
-├── app/                    # Next.js app directory
-│   ├── dashboard/         # Dashboard pages
-│   ├── login/             # Login page
-│   ├── signup/            # Signup page
-│   ├── layout.tsx         # Root layout
-│   ├── page.tsx           # Landing page
-│   └── globals.css        # Global styles
-├── components/            # Reusable components
-│   ├── ui/               # UI components (Button, Input, Card, etc.)
-│   └── layout/           # Layout components (Sidebar, Topbar)
-├── tailwind.config.ts    # Tailwind configuration
-├── tsconfig.json         # TypeScript configuration
-└── package.json          # Dependencies
-```
-
-## Pages
-
-### Public Pages
-- **Landing Page** (`/`) - Hero, features, pricing, testimonials
-- **Login** (`/login`) - User authentication
-- **Signup** (`/signup`) - User registration
-- **Forgot Password** (`/forgot-password`) - Request password reset link
-- **Reset Password** (`/reset-password`) - Set new password from secure token
-
-### Dashboard Pages
-- **Dashboard** (`/dashboard`) - Main dashboard with widgets and stats
-- **Hospital Setup** (`/dashboard/hospital/setup`) - Hospital website builder
-- **Pharmacy Overview** (`/dashboard/pharmacy`) - Pharmacy launch and inventory overview
-- **Pharmacy Setup** (`/dashboard/pharmacy/setup`) - Initial website setup flow
-- **Pharmacy Products** (`/dashboard/pharmacy/products`) - CSV import and catalog management
-- **Pharmacy Templates** (`/dashboard/pharmacy/templates`) - Purchase, activate, and cancel templates
-- **Business Info** (`/dashboard/business-info`) - Business information form
-- **AI Assistant** (`/dashboard/ai-assistant`) - AI chat interface
-- **Settings** (`/dashboard/settings`) - Account and website settings
-
-## Components
-
-### UI Components
-- `Button` - Primary, Secondary, Ghost variants
-- `Input` - Text input with label and error handling
-- `Textarea` - Multi-line text input
-- `Select` - Dropdown select
-- `FileUpload` - File upload with drag & drop
-- `Toggle` - Switch toggle
-- `Card` - Container card component
-- `Modal` - Modal dialog
-- `ProgressBar` - Step progress indicator
-
-### Layout Components
-- `Sidebar` - Dashboard navigation sidebar
-- `Topbar` - Top navigation bar with search and user menu
-
-## Color Palette
-
-- **Primary**: #1B76FF (Blue)
-- **Primary Dark**: #0C4EB7
-- **Primary Light**: #E7F2FF
-- **Neutrals**: #FFFFFF, #F7F9FC, #DCE3EC, #6C7A8A, #1A1A1A
-- **Success**: #28C76F (Green)
-- **Warning**: #FFB020 (Orange)
-- **Error**: #FF4C4C (Red)
-- **AI Accent**: #7C3AED (Purple)
-
-## Development
-
-### Build for Production
-
-```bash
-npm run build
-npm start
-```
-
-### Linting
-
-```bash
+# Compile and check TypeScript types without emitting files
 npx tsc --noEmit
+
+# Compile production-ready deployment assets
+npm run build
+
+# Start production server using compiled assets
+npm start
+
+# Run frontend Jest testing suite
+npm test
 ```
 
-## Notes
+---
 
-- Frontend integrates with the Django API using `NEXT_PUBLIC_API_URL`.
-- Pharmacy template pages also mirror selected data in scoped/public local storage for instant owner and visitor previews.
-- For release validation, prefer `npm run build` and `npx tsc --noEmit`.
+## 🧪 Testing Environment
 
-## License
-
-This project is part of a frontend development task.
-
+Frontend testing uses **Jest** with **jsdom** configuration to test React layout modules. Test specs are located inside the `__tests__/` directory.
+To execute unit tests:
+```bash
+npm test
+```
+*Note: Make sure `npx tsc --noEmit` passes clean typechecks before committing frontend changes.*
